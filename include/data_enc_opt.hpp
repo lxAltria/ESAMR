@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdlib>
 #include <climits>
+#include <encoder/HuffmanEncoder.hpp>
 
 namespace REFACTOR{
 

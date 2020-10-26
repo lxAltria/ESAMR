@@ -16,11 +16,13 @@
 #include "decompose.hpp"
 #include "recompose.hpp"
 #include "io_utils.hpp"
-
-namespace REFACTOR{
+#include "lossless.hpp"
 
 using namespace std;
+using namespace LOSSLESS;
 using namespace MGARD;
+
+namespace REFACTOR{
 
 // size of segment: default 4 MB
 const int seg_size = 4;
@@ -420,7 +422,7 @@ vector<vector<unsigned char*>> level_centric_data_refactor(const T * data, int t
             for(int k=0; k<intra_level_components.size(); k++){
                 if(intra_level_sizes[k] > LOSSLESS_THRESHOLD){
                     unsigned char * lossless_compressed = NULL;
-                    size_t lossless_length = MGARD::sz_lossless_compress(ZSTD_COMPRESSOR, 3, intra_level_components[k], intra_level_sizes[k], &lossless_compressed);
+                    size_t lossless_length = zstd_lossless_compress(ZSTD_COMPRESSOR, 3, intra_level_components[k], intra_level_sizes[k], &lossless_compressed);
                     free(intra_level_components[k]);
                     intra_level_components[k] = lossless_compressed;
                     level_lossless_indicators[k] = true;
@@ -489,7 +491,7 @@ T * level_centric_data_reposition(const vector<vector<const unsigned char*>>& le
             for(int k=0; k<retrieved_bitplanes; k++){
                 if(metadata.lossless_indicators[i][k]){
                     unsigned char * lossless_decompressed = NULL;
-                    size_t compressed_length = MGARD::sz_lossless_decompress(ZSTD_COMPRESSOR, level_components[i][k], level_sizes[k], &lossless_decompressed);
+                    size_t compressed_length = zstd_lossless_decompress(ZSTD_COMPRESSOR, level_components[i][k], level_sizes[k], &lossless_decompressed);
                     intra_level_components[k] = lossless_decompressed;
                     lossless_decompressed_components.push_back(lossless_decompressed);
                 }

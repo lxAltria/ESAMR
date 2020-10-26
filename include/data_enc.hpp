@@ -12,9 +12,9 @@
 #include "data_enc_opt.hpp"
 #include <climits>
 
-namespace REFACTOR{
-
 using namespace std;
+
+namespace REFACTOR{
 
 #define ENCODING_DEFAULT 0
 #define ENCODING_DEFAULT_SIGN_POSTPONE 1
