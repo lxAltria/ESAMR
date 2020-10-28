@@ -4,12 +4,12 @@ set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS "-g -O3")
 
-set (MGARDx_INCLUDES "/Users/xin/github/test/MGARDx/install/include")
+set (MGARDx_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/MGARDx/install/include")
 
-find_library(ZSTD_LIB zstd HINTS "/Users/xin/github/SZ_master/build/zstd")
-find_library(SZ3_LIB SZ3 HINTS "/Users/xin/github/SZ_refactory/build/src")
-set (ZSTD_INCLUDES "/Users/xin/github/SZ_master/zstd")
-set (SZ3_INCLUDES "/Users/xin/github/SZ_refactory/include")
+find_library(ZSTD_LIB zstd HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ/install/lib")
+find_library(SZ3_LIB SZ3 HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ3/build/src")
+set (ZSTD_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ/install/include")
+set (SZ3_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ3/include")
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE include)
