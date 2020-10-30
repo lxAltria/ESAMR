@@ -28,11 +28,6 @@ namespace REFACTOR{
 const int seg_size = 4;
 
 #define LOSSLESS_THRESHOLD 200
-// data reorganization options
-#define IN_ORDER 0
-#define ROUND_ROBIN 1
-#define UNIFORM_ERROR 2
-#define GREEDY_SHUFFLING 3
 // metadata for refactored data
 template <class T>
 class Metadata{

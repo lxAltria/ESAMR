@@ -14,6 +14,13 @@ namespace REFACTOR{
 
 using namespace std;
 
+// data reorganization options
+#define IN_ORDER 0
+#define ROUND_ROBIN 1
+#define UNIFORM_ERROR 2
+#define GREEDY_SHUFFLING 3
+
+// error options
 #define MAX_ERROR 1
 #define SQUARED_ERROR 2
 #define PSNR 3
