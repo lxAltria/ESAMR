@@ -11,14 +11,14 @@ cd Multiprecision-data-refactoring<br />
 
 # Usage
 cd build<br />
-mkdir -p refactored_data<br />
+mkdir -p refactor_data<br />
 Refactor: ./test/test_refactor $data_file $data_type $encode_opt $reorder_opt $num_dims $dim0 $dim1 $dim2<br />
 ./test/test_refactor ../external/SZ3/data/Uf48.bin.dat 0 3 0 1 3 100 500 500<br />
 Retrieval: ./test/test_retrieval $data_file $data_type $error_mode $error $dims $dim0 $dim1 $dim2<br />
 ./test/test_retrieval ../external/SZ3/data/Uf48.bin.dat 0 1 1.0 3 100 500 500<br />
 
 # Notes and Parameters
-During refactoring, the location of refactored data is hardcoded to "refactor/" directory under current directory. Need to create the directory before writing.<br />
+During refactoring, the location of refactored data is hardcoded to "refactor_data/" directory under current directory. Need to create the directory before writing.<br />
 During retrieving, the location of recomposed data is hardcded to "mgard.recompose" under current directory.<br />
 data_file: path to input date file.<br />
 data_type: 0 for float, 1 for double.<br />
@@ -33,4 +33,7 @@ reorder_opt: reordering options for bitplanes (see include/error_est.hpp)<br />
 1: round-robin, which iteratively picks one bitplane for each level<br />
 2: uniform error, which picks bitplane such that every level will have the same L-infinity error<br />
 3: greedy shuffling, which picks bitplane according to a greedy method<br />
-
+error mode: error metric during retreival (see include/error_est.hpp)<br />
+1: max error, i.e. L-infty<br />
+2: squared error, i.e. L-2<br />
+3: PSNR<br />
