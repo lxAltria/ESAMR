@@ -160,7 +160,7 @@ struct CompareEfficiency {
 @params order: order of level bitplanes
 @params total_size: total size of reorganized data
 */
-unsigned char * refactored_data_reorganization_in_order(const vector<vector<unsigned char*>>& level_components, const vector<vector<size_t>>& level_sizes, vector<int>& order, size_t& total_size){
+uint8_t * refactored_data_reorganization_in_order(const vector<vector<uint8_t*>>& level_components, const vector<vector<size_t>>& level_sizes, vector<int>& order, size_t& total_size){
     cout << "Reorganize refactored data by level ordering." << endl;
     const int num_levels = level_sizes.size();
     total_size = 0;
@@ -169,8 +169,8 @@ unsigned char * refactored_data_reorganization_in_order(const vector<vector<unsi
             total_size += level_sizes[i][j];
         }
     }
-    unsigned char * reorganized_data = (unsigned char *) malloc(total_size);
-    unsigned char * reorganized_data_pos = reorganized_data;
+    uint8_t * reorganized_data = (uint8_t *) malloc(total_size);
+    uint8_t * reorganized_data_pos = reorganized_data;
     for(int i=0; i<num_levels; i++){
         for(int j=0; j<level_sizes[i].size(); j++){
             if(j) order.push_back(i);
@@ -193,7 +193,7 @@ unsigned char * refactored_data_reorganization_in_order(const vector<vector<unsi
 @params order: order of level bitplanes
 @params total_size: total size of reorganized data
 */
-unsigned char * refactored_data_reorganization_round_robin(const vector<vector<unsigned char*>>& level_components, const vector<vector<size_t>>& level_sizes, vector<int>& order, size_t& total_size){
+uint8_t * refactored_data_reorganization_round_robin(const vector<vector<uint8_t*>>& level_components, const vector<vector<size_t>>& level_sizes, vector<int>& order, size_t& total_size){
     cout << "Reorganize refactored data by round-robin." << endl;
     const int num_levels = level_sizes.size();
     total_size = 0;
@@ -202,8 +202,8 @@ unsigned char * refactored_data_reorganization_round_robin(const vector<vector<u
             total_size += level_sizes[i][j];
         }
     }
-    unsigned char * reorganized_data = (unsigned char *) malloc(total_size);
-    unsigned char * reorganized_data_pos = reorganized_data;
+    uint8_t * reorganized_data = (uint8_t *) malloc(total_size);
+    uint8_t * reorganized_data_pos = reorganized_data;
     int max_level_size = 0;
     for(int i=0; i<num_levels; i++){
         if(level_sizes[i].size() > max_level_size){
@@ -267,7 +267,7 @@ vector<vector<T>> amortize_error(const vector<vector<T>>& error, int steps){
 @params order: order of level bitplanes
 @params total_size: total size of reorganized data
 */
-unsigned char * refactored_data_reorganization_uniform_error(int N, int mode, const vector<vector<unsigned char*>>& level_components, const vector<vector<size_t>>& level_sizes, const vector<vector<double>>& level_errors, vector<int>& order, size_t& total_size){
+uint8_t * refactored_data_reorganization_uniform_error(int N, int mode, const vector<vector<uint8_t*>>& level_components, const vector<vector<size_t>>& level_sizes, const vector<vector<double>>& level_errors, vector<int>& order, size_t& total_size){
     cout << "Reorganize refactored data by uniform quantization." << endl;
     const int num_levels = level_sizes.size();
     total_size = 0;
@@ -285,8 +285,8 @@ unsigned char * refactored_data_reorganization_uniform_error(int N, int mode, co
         }
     }
     cout << "total_size = " << total_size << endl;
-    unsigned char * reorganized_data = (unsigned char *) malloc(total_size);
-    unsigned char * reorganized_data_pos = reorganized_data;
+    uint8_t * reorganized_data = (uint8_t *) malloc(total_size);
+    uint8_t * reorganized_data_pos = reorganized_data;
     vector<size_t> index(num_levels, 0);
     order.clear();
     int rest_level_count = num_levels;
@@ -333,7 +333,7 @@ unsigned char * refactored_data_reorganization_uniform_error(int N, int mode, co
 @params order: order of level bitplanes
 @params total_size: total size of reorganized data
 */
-unsigned char * refactored_data_reorganization_greedy_shuffling(int N, int mode, const vector<vector<unsigned char*>>& level_components, const vector<vector<size_t>>& level_sizes, const vector<vector<double>>& level_errors, vector<int>& order, size_t& total_size){
+uint8_t * refactored_data_reorganization_greedy_shuffling(int N, int mode, const vector<vector<uint8_t*>>& level_components, const vector<vector<size_t>>& level_sizes, const vector<vector<double>>& level_errors, vector<int>& order, size_t& total_size){
     cout << "Reorganize refactored data by greedy shuffling." << endl;
     const int num_levels = level_sizes.size();
     total_size = 0;
@@ -375,8 +375,8 @@ unsigned char * refactored_data_reorganization_greedy_shuffling(int N, int mode,
         exit(0);
     }
     // efficiency = amortize_error(efficiency, LOOKUP_STEPS);
-    unsigned char * reorganized_data = (unsigned char *) malloc(total_size);
-    unsigned char * reorganized_data_pos = reorganized_data;
+    uint8_t * reorganized_data = (uint8_t *) malloc(total_size);
+    uint8_t * reorganized_data_pos = reorganized_data;
     vector<size_t> index(num_levels, 0);
     // metric for greedy algorithm: how much error gain per byte
     priority_queue<Efficiency, vector<Efficiency>, CompareEfficiency> efficiency_heap;
@@ -474,12 +474,12 @@ size_t interpret_reading_size(size_t N, const vector<vector<size_t>>& level_size
 @params order: order of level bitplanes
 @params retrieved_size: size of retrieved data
 */
-vector<vector<const unsigned char*>> read_reorganized_data(const unsigned char * refactored_data, const vector<vector<size_t>>& level_sizes, const vector<int>& order, size_t retrieved_size){
-    vector<vector<const unsigned char*>> level_components;
+vector<vector<const uint8_t*>> read_reorganized_data(const uint8_t * refactored_data, const vector<vector<size_t>>& level_sizes, const vector<int>& order, size_t retrieved_size){
+    vector<vector<const uint8_t*>> level_components;
     for(int i=0; i<level_sizes.size(); i++){
-        level_components.push_back(vector<const unsigned char*>());
+        level_components.push_back(vector<const uint8_t*>());
     }
-    const unsigned char * refactored_data_pos = refactored_data;
+    const uint8_t * refactored_data_pos = refactored_data;
     vector<int> index(level_sizes.size(), 0);
     int count = 0;
     while(refactored_data_pos - refactored_data < retrieved_size){

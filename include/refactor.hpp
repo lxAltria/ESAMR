@@ -279,6 +279,7 @@ template <class T>
 void interleave_level_coefficients(const T * data, const vector<size_t>& dims, const vector<size_t>& dims_fine, const vector<size_t>& dims_coasre, T * buffer){
     switch(dims.size()){
         case 3:
+            // interleave_level_coefficients_3d(data, dims, dims_fine, dims_coasre, buffer);
             interleave_level_coefficients_3d_space_filling_curve(data, dims, dims_fine, dims_coasre, buffer);
             break;
         default:
@@ -298,6 +299,7 @@ template <class T>
 void reposition_level_coefficients(const T * buffer, const vector<size_t>& dims, const vector<size_t>& dims_fine, const vector<size_t>& dims_coasre, T * data){
     switch(dims.size()){
         case 3:
+            // reposition_level_coefficients_3d(buffer, dims, dims_fine, dims_coasre, data);
             reposition_level_coefficients_3d_space_filling_curve(buffer, dims, dims_fine, dims_coasre, data);
             break;
         default:
@@ -402,7 +404,7 @@ vector<vector<uint8_t*>> level_centric_data_refactor(const T * data, int target_
             // record starting bitplanes
             // uint8_t * compact_starting_bitplanes = compact(starting_bitplanes, index_size);
             // level_components[i].push_back(compact_starting_bitplanes);
-            // component_sizes.push_back(starting_bitplanes.size() * sizeof(uint8_t));
+            // component_sizes.push_back(compute_compact_size(starting_bitplanes.size(), index_size));
             {
                 uint8_t * compressed_starting_bitplanes = NULL;
                 size_t lossless_length = zstd_lossless_compress(ZSTD_COMPRESSOR, 3, starting_bitplanes.data(), starting_bitplanes.size(), &compressed_starting_bitplanes);
@@ -472,6 +474,7 @@ T * level_centric_data_reposition(const vector<vector<const uint8_t*>>& level_co
             int level_exp = 0;
             frexp(level_error_bounds[i], &level_exp);
             T * buffer = NULL;
+            // -1 to exclude starting bitplane indices
             int retrieved_bitplanes = intra_recompose_level[i] ? intra_recompose_level[i] - 1 : metadata.encoded_bitplanes;
             if(retrieved_bitplanes > metadata.encoded_bitplanes) retrieved_bitplanes = metadata.encoded_bitplanes;            
             cout << "retrieved_bitplanes = " << retrieved_bitplanes << endl;
@@ -483,7 +486,6 @@ T * level_centric_data_reposition(const vector<vector<const uint8_t*>>& level_co
             vector<const uint64_t *> intra_level_components(retrieved_bitplanes);
             vector<uint8_t *> lossless_decompressed_components;
             // retrieval starting bitplanes
-            // vector<uint8_t> starting_bitplanes = decompact<uint8_t>(level_components[i][0], level_sizes[0]);
             vector<uint8_t> starting_bitplanes;
             {
                 uint8_t * lossless_decompressed = NULL;

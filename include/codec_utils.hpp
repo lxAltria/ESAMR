@@ -42,7 +42,7 @@ inline int block_size_based_on_bitplane_int_type(){
 }
 
 inline uint32_t compute_compact_size(uint32_t size, uint8_t index_size){
-	return (size * UINT8_BITS - 1) / index_size + 1;
+	return (size * index_size - 1) / UINT8_BITS + 1;
 }
 
 /* 
@@ -54,16 +54,57 @@ template<class T>
 uint8_t * compact(const std::vector<T>& data, uint8_t index_size){
 	static_assert(std::is_unsigned<T>::value, "codec_utils compact: input array must be unsigned integers.");
 	static_assert(std::is_integral<T>::value, "codec_utils compact: input array must be unsigned integers.");
-	uint32_t compact_size = data.size() * sizeof(T);//compute_compact_size(data.size(), index_size);
+	const uint8_t mask[UINT8_BITS + 1] = {0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff};
+	uint32_t compact_size = compute_compact_size(data.size(), index_size);
 	uint8_t * compact_data = (uint8_t *) malloc(compact_size);
-	memcpy(compact_data, data.data(), data.size() * sizeof(T));
+	uint8_t * compact_data_pos = compact_data;
+	uint8_t buffer = 0;
+	uint8_t rest_bits = UINT8_BITS;
+	for(int i=0; i<data.size(); i++){
+		if(index_size <= rest_bits){
+			rest_bits -= index_size;
+			buffer <<= rest_bits;
+			buffer += data[i];
+		}
+		else{
+			buffer <<= rest_bits;
+			buffer += data[i] >> (index_size - rest_bits);
+			*(compact_data_pos ++) = buffer;
+			buffer = data[i] & mask[index_size - rest_bits];
+			rest_bits = UINT8_BITS + rest_bits - index_size;
+		}
+	}
+	std::cout << std::endl;
+	// flush buffer
+	if(buffer){
+		*(compact_data_pos ++) = buffer << rest_bits;
+	}
 	return compact_data;
 }
 
 template<class T>
-std::vector<T> decompact(const uint8_t * compact_data, uint32_t size){
-	std::vector<T> data(size);
-	memcpy(data.data(), compact_data, size * sizeof(T));
+std::vector<T> decompact(const uint8_t * compact_data, uint32_t size, uint8_t index_size){
+	static_assert(std::is_unsigned<T>::value, "codec_utils decompact: input array must be unsigned integers.");
+	static_assert(std::is_integral<T>::value, "codec_utils decompact: input array must be unsigned integers.");
+	std::vector<T> data(size, 0);
+	const uint8_t mask[UINT8_BITS + 1] = {0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff};
+	const uint8_t * compact_data_pos = compact_data;
+	uint8_t buffer = 0;
+	uint8_t rest_bits = 0;
+	for(int i=0; i<size; i++){
+		if(index_size <= rest_bits){
+			rest_bits -= index_size;
+			data[i] = buffer >> rest_bits;
+			buffer = buffer & mask[rest_bits];
+		}
+		else{
+			data[i] = buffer << (index_size - rest_bits);
+			buffer = *(compact_data_pos ++);
+			rest_bits = UINT8_BITS + rest_bits - index_size;
+			data[i] += buffer >> rest_bits;
+			buffer = buffer & mask[rest_bits];
+		}
+	}
 	return data;
 }
 
