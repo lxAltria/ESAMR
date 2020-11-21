@@ -400,12 +400,15 @@ vector<vector<uint8_t*>> level_centric_data_refactor(const T * data, int target_
             level_components.push_back(vector<uint8_t *>());
             vector<size_t>& component_sizes = metadata.component_sizes[i];
             // record starting bitplanes
-            uint8_t * compact_starting_bitplanes = compact(starting_bitplanes, index_size);
-            level_components[i].push_back(compact_starting_bitplanes);
-            // store original size
-            cout << "level_elements = " << level_elements[i] << endl;
-            cout << "starting_bitplanes size = " << starting_bitplanes.size() << endl;
-            component_sizes.push_back(starting_bitplanes.size() * sizeof(uint8_t));
+            // uint8_t * compact_starting_bitplanes = compact(starting_bitplanes, index_size);
+            // level_components[i].push_back(compact_starting_bitplanes);
+            // component_sizes.push_back(starting_bitplanes.size() * sizeof(uint8_t));
+            {
+                uint8_t * compressed_starting_bitplanes = NULL;
+                size_t lossless_length = zstd_lossless_compress(ZSTD_COMPRESSOR, 3, starting_bitplanes.data(), starting_bitplanes.size(), &compressed_starting_bitplanes);
+                level_components[i].push_back(compressed_starting_bitplanes);
+                component_sizes.push_back(lossless_length);                
+            }
             for(int k=0; k<intra_level_components.size(); k++){
                 if(intra_level_sizes[k] > LOSSLESS_THRESHOLD){
                     uint8_t * lossless_compressed = NULL;
@@ -480,7 +483,14 @@ T * level_centric_data_reposition(const vector<vector<const uint8_t*>>& level_co
             vector<const uint64_t *> intra_level_components(retrieved_bitplanes);
             vector<uint8_t *> lossless_decompressed_components;
             // retrieval starting bitplanes
-            vector<uint8_t> starting_bitplanes = decompact<uint8_t>(level_components[i][0], level_sizes[0]);
+            // vector<uint8_t> starting_bitplanes = decompact<uint8_t>(level_components[i][0], level_sizes[0]);
+            vector<uint8_t> starting_bitplanes;
+            {
+                uint8_t * lossless_decompressed = NULL;
+                size_t compressed_length = zstd_lossless_decompress(ZSTD_COMPRESSOR, level_components[i][0], level_sizes[0], &lossless_decompressed);
+                uint32_t starting_bitplanes_size = (level_elements[i] - 1) / 64 + 1;
+                starting_bitplanes = vector<uint8_t>(reinterpret_cast<const uint8_t *>(lossless_decompressed), reinterpret_cast<const uint8_t *>(lossless_decompressed) + starting_bitplanes_size);
+            }
             // lossless decompression
             for(int k=0; k<retrieved_bitplanes; k++){
                 if(metadata.lossless_indicators[i][k]){
