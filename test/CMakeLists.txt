@@ -6,9 +6,13 @@ add_executable (test_retrieval test_retrieval.cpp)
 target_include_directories(test_retrieval PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
 target_link_libraries(test_retrieval ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
 
-# find_library(ZFP_LIB zfp HINTS "/Users/xin/github/zfp/build/lib")
-# set (ZFP_INC "/Users/xin/github/zfp/include")
+# find_library(ZFP_LIB zfp HINTS "/Users/x0o/github/zfp-0.5.5/build/lib")
+# set (ZFP_INC "/Users/x0o/github/zfp-0.5.5/include")
 
 # add_executable (test_bitplane_performance test_bitplane_performance.cpp)
 # target_include_directories(test_bitplane_performance PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${ZFP_INC})
 # target_link_libraries(test_bitplane_performance ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${ZFP_LIB})
+
+add_executable (test_bitplane_encoding test_bitplane_encoding.cpp)
+target_include_directories(test_bitplane_encoding PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${ZFP_INC})
+target_link_libraries(test_bitplane_encoding ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${ZFP_LIB})
