@@ -63,9 +63,7 @@ template <>
 vector<double> record_level_max_e(const float * data, size_t n, int num_bitplanes, float level_max_val){
     int level_exp = 0;
     frexp(level_max_val, &level_exp);
-    const int prec = 23;
-    int encode_prec = num_bitplanes - 1;
-    vector<double> max_e = vector<double>(encode_prec + 1, 0);
+    vector<double> max_e = vector<double>(num_bitplanes + 1, 0);
     max_e[0] = level_max_val;
     double err = ldexp(1.0, level_exp - 1);
     for(int i=1; i<max_e.size(); i++){
@@ -78,8 +76,7 @@ template <>
 vector<double> record_level_max_e(const double * data, size_t n, int num_bitplanes, double level_max_val){
     cout << "Not implemented yet...\nExit -1.\n";
     exit(-1);
-    if(num_bitplanes > 52) num_bitplanes = 52;
-    vector<double> mse = vector<double>(num_bitplanes, 0);
+    vector<double> mse = vector<double>(num_bitplanes + 1, 0);
     // FloatingInt64 fi;
     return mse;
 }
@@ -96,7 +93,7 @@ template <>
 vector<double> record_level_mse(const float * data, size_t n, int num_bitplanes, int level_exp){
     const int prec = 23;
     const int encode_prec = num_bitplanes - 1;
-    vector<double> mse = vector<double>(num_bitplanes, 0);
+    vector<double> mse = vector<double>(num_bitplanes + 1, 0);
     FloatingInt32 fi;
     for(int i=0; i<n; i++){
         if(data[i] == 0) continue;
@@ -343,8 +340,12 @@ uint8_t * refactored_data_reorganization_greedy_shuffling(int N, int mode, const
     //         because sign is grouped with the first bitplane
     vector<vector<double>> efficiency;
     for(int i=0; i<num_levels; i++){
+        // efficiency size = (# of bitplanes) = (level_sizes.size() - 1) because the first level  
         efficiency.push_back(vector<double>(level_sizes[i].size() - 1));
     }
+    cout << "efficiency size = " << efficiency[0].size() << endl;
+    cout << "level size = " << level_sizes[0].size() << endl;
+    cout << "level_errors size = " << level_errors[0].size() << endl;
     // compute erorr gain and sizes for bitplanes
     if(mode == MAX_ERROR){
         for(int i=0; i<num_levels; i++){

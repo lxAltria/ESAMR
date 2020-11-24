@@ -45,7 +45,7 @@ T * decode(const vector<const T_bitplane_int *>& encoded, const vector<uint8_t>&
 	// decode
 	T * data_pos = data;
 	int block_id = 0;
-	for(int i=0; i<n; i+=block_size){
+	for(int i=0; i<n - block_size; i+=block_size){
 		memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
 		int starting_bitplane = starting_bitplanes[block_id ++];
 		T_bitplane_int sign_bitplane = 0;
@@ -57,6 +57,21 @@ T * decode(const vector<const T_bitplane_int *>& encoded, const vector<uint8_t>&
 	        T cur_data = ldexp((T)int_data_buffer[j], - num_bitplanes + aligned_exp);
 	        *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
     	}
+    }
+    // leftover
+    {
+        int rest_size = n - block_size * block_id;
+        memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+        int starting_bitplane = starting_bitplanes[block_id ++];
+        T_bitplane_int sign_bitplane = 0;
+        if(starting_bitplane < num_bitplanes){
+            sign_bitplane = *(encoded_pos[starting_bitplane] ++);
+            decode_int_block(encoded_pos, rest_size, starting_bitplane, num_bitplanes - starting_bitplane, int_data_buffer.data());
+        }
+        for(int j=0; j<rest_size; j++, sign_bitplane >>= 1){
+            T cur_data = ldexp((T)int_data_buffer[j], - num_bitplanes + aligned_exp);
+            *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
+        }
     }
     return data;
 }

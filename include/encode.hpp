@@ -50,7 +50,6 @@ template<class T, class T_bitplane_int>
 vector<T_bitplane_int *> encode(T const * data, size_t n, int aligned_exp, int num_bitplanes, vector<uint8_t>& starting_bitplanes, vector<uint32_t>& encoded_sizes){
 	// determine block size based on bitplane integer type
 	int block_size = block_size_based_on_bitplane_int_type<T_bitplane_int>();
-	cout << "block_size = " << block_size << endl;
 	starting_bitplanes = vector<uint8_t>((n - 1)/block_size + 1, 0);
 	encoded_sizes = vector<uint32_t>(num_bitplanes, 0);
 	// define fixed point type
@@ -81,8 +80,6 @@ vector<T_bitplane_int *> encode(T const * data, size_t n, int aligned_exp, int n
 	// leftover
 	{
 		int rest_size = n - block_size * block_id;
-		cout << rest_size << endl;
-		// memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
 		T_bitplane_int sign_bitplane = 0;
 		for(int j=0; j<rest_size; j++){
 			T cur_data = *(data_pos++);

@@ -28,7 +28,7 @@ namespace REFACTOR{
 // size of segment: default 4 MB
 const int seg_size = 4;
 
-#define LOSSLESS_THRESHOLD 200
+#define LOSSLESS_THRESHOLD 2000
 // metadata for refactored data
 template <class T>
 class Metadata{
@@ -402,9 +402,6 @@ vector<vector<uint8_t*>> level_centric_data_refactor(const T * data, int target_
             level_components.push_back(vector<uint8_t *>());
             vector<size_t>& component_sizes = metadata.component_sizes[i];
             // record starting bitplanes
-            // uint8_t * compact_starting_bitplanes = compact(starting_bitplanes, index_size);
-            // level_components[i].push_back(compact_starting_bitplanes);
-            // component_sizes.push_back(compute_compact_size(starting_bitplanes.size(), index_size));
             {
                 uint8_t * compressed_starting_bitplanes = NULL;
                 size_t lossless_length = zstd_lossless_compress(ZSTD_COMPRESSOR, 3, starting_bitplanes.data(), starting_bitplanes.size(), &compressed_starting_bitplanes);
@@ -425,9 +422,8 @@ vector<vector<uint8_t*>> level_centric_data_refactor(const T * data, int target_
                     component_sizes.push_back(intra_level_sizes[k]);
                 }
             }
-            cout << endl;
             err = clock_gettime(CLOCK_REALTIME, &end);
-            cout << "Encoding time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+            cout << "Bitplane encoding time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         }
     }
     auto t = metadata.component_sizes;
@@ -492,6 +488,7 @@ T * level_centric_data_reposition(const vector<vector<const uint8_t*>>& level_co
                 size_t compressed_length = zstd_lossless_decompress(ZSTD_COMPRESSOR, level_components[i][0], level_sizes[0], &lossless_decompressed);
                 uint32_t starting_bitplanes_size = (level_elements[i] - 1) / 64 + 1;
                 starting_bitplanes = vector<uint8_t>(reinterpret_cast<const uint8_t *>(lossless_decompressed), reinterpret_cast<const uint8_t *>(lossless_decompressed) + starting_bitplanes_size);
+                free(lossless_decompressed);
             }
             // lossless decompression
             for(int k=0; k<retrieved_bitplanes; k++){
@@ -510,8 +507,11 @@ T * level_centric_data_reposition(const vector<vector<const uint8_t*>>& level_co
                 free(lossless_decompressed_components[k]);
             }
             err = clock_gettime(CLOCK_REALTIME, &end);
-            cout << "Byteplane decoding time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+            cout << "Bitplane decoding time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+            err = clock_gettime(CLOCK_REALTIME, &start);
             reposition_level_coefficients(buffer, dims, level_dims[i], prev_dims, data);
+            err = clock_gettime(CLOCK_REALTIME, &end);
+            cout << "Level reposition time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
             // string outfile("reconstructed_level_");
             // writefile((outfile + to_string(level_elements.size() - 1 - i) + ".dat").c_str(), reinterpret_cast<const T *>(buffer), level_elements[i]);
             // release reconstructed component
