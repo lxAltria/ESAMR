@@ -1,18 +1,27 @@
+add_executable (test_encoder test_encoder.cpp)
+target_include_directories(test_encoder PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_encoder ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+
+add_executable (test_decomposer test_decomposer.cpp)
+target_include_directories(test_decomposer PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_decomposer ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+
+add_executable (test_interleaver test_interleaver.cpp)
+target_include_directories(test_interleaver PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_interleaver ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+
+add_executable (test_error_collector test_error_collector.cpp)
+target_include_directories(test_error_collector PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_error_collector ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+
+add_executable (test_retriever test_retriever.cpp)
+target_include_directories(test_retriever PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_retriever ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+
 add_executable (test_refactor test_refactor.cpp)
 target_include_directories(test_refactor PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
 target_link_libraries(test_refactor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
 
-add_executable (test_retrieval test_retrieval.cpp)
-target_include_directories(test_retrieval PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
-target_link_libraries(test_retrieval ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
-
-# find_library(ZFP_LIB zfp HINTS "/Users/x0o/github/zfp-0.5.5/build/lib")
-# set (ZFP_INC "/Users/x0o/github/zfp-0.5.5/include")
-
-# add_executable (test_bitplane_performance test_bitplane_performance.cpp)
-# target_include_directories(test_bitplane_performance PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${ZFP_INC})
-# target_link_libraries(test_bitplane_performance ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${ZFP_LIB})
-
-add_executable (test_bitplane_encoding test_bitplane_encoding.cpp)
-target_include_directories(test_bitplane_encoding PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${ZFP_INC})
-target_link_libraries(test_bitplane_encoding ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${ZFP_LIB})
+add_executable (test_reconstructor test_reconstructor.cpp)
+target_include_directories(test_reconstructor PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
+target_link_libraries(test_reconstructor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
