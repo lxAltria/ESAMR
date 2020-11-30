@@ -4,9 +4,11 @@
 #include "ErrorEstimatorInterface.hpp"
 
 namespace MDR {
+    template<class T>
+    class MaxErrorEstimator : public concepts::ErrorEstimatorInterface<T>{};
     // max error estimator for orthogonal basis
     template<class T>
-    class MaxErrorEstimatorOB : public concepts::ErrorEstimatorInterface<T> {
+    class MaxErrorEstimatorOB : public MaxErrorEstimator<T> {
     public:
         MaxErrorEstimatorOB(int num_dims){
             switch(num_dims){
@@ -42,7 +44,7 @@ namespace MDR {
     // max error estimator for hierarchical basis
     // c = 1 as all the operations are linear
     template<class T>
-    class MaxErrorEstimatorHB : public concepts::ErrorEstimatorInterface<T> {
+    class MaxErrorEstimatorHB : public MaxErrorEstimator<T> {
     public:
         MaxErrorEstimatorHB(){}
         inline T estimate_error(T error, int level) const {

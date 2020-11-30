@@ -1,5 +1,5 @@
-#ifndef _MDR_S_NORM_ERROR_COLLECTOR_HPP
-#define _MDR_S_NORM_ERROR_COLLECTOR_HPP
+#ifndef _MDR_SQUARED_ERROR_COLLECTOR_HPP
+#define _MDR_SQUARED_ERROR_COLLECTOR_HPP
 
 #include "ErrorCollectorInterface.hpp"
 
@@ -14,11 +14,11 @@ namespace MDR {
     };
     // s-norm error collector: collecting sum of squared errors
     template<class T>
-    class SNormErrorCollector : public concepts::ErrorCollectorInterface<T> {
+    class SquaredErrorCollector : public concepts::ErrorCollectorInterface<T> {
     public:
-        SNormErrorCollector(){
-            static_assert(std::is_floating_point<T>::value, "SNormErrorCollector: input data must be floating points.");
-            static_assert(!std::is_same<T, long double>::value, "SNormErrorCollector: long double is not supported.");
+        SquaredErrorCollector(){
+            static_assert(std::is_floating_point<T>::value, "SquaredErrorCollector: input data must be floating points.");
+            static_assert(!std::is_same<T, long double>::value, "SquaredErrorCollector: long double is not supported.");
         }
         std::vector<double> collect_level_error(T const * data, size_t n, int num_bitplanes, T max_level_error) const {
             int level_exp = 0;
@@ -64,7 +64,7 @@ namespace MDR {
             return squared_error;
         }
         void print() const {
-            std::cout << "S-norm error collector." << std::endl;
+            std::cout << "Squared error collector." << std::endl;
         }
     };
 }

@@ -7,19 +7,39 @@
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "Retriever/Retriever.hpp"
 #include "ErrorEstimator/ErrorEstimator.hpp"
+#include "ErrorCollector/ErrorCollector.hpp"
 #include "SizeInterpreter/SizeInterpreter.hpp"
 #include "LosslessCompressor/LosslessCompressor.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
     // a decomposition-based scientific data reconstructor: inverse operator of composed refactor
-    template<class T, class Decomposer, class Interleaver, class Encoder, class SizeInterpreter, class Retriever>
+    template<class T, class Decomposer, class Interleaver, class Encoder, class SizeInterpreter, class ErrorEstimator, class Retriever>
     class ComposedReconstructor : public concepts::ReconstructorInterface<T> {
     public:
         ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, SizeInterpreter interpreter, Retriever retriever)
             : decomposer(decomposer), interleaver(interleaver), encoder(encoder), interpreter(interpreter), retriever(retriever){}
 
         T * reconstruct(double tolerance){
+            std::vector<std::vector<double>> level_abs_errors;
+            uint8_t target_level = level_error_bounds.size() - 1;
+            std::vector<std::vector<double>>& level_errors = level_squared_errors;
+            if(std::is_base_of<MaxErrorEstimator<T>, ErrorEstimator>::value){
+                std::cout << "ErrorEstimator is base of MaxErrorEstimator, computing absolute error" << std::endl;
+                MaxErrorCollector<T> collector = MaxErrorCollector<T>();
+                for(int i=0; i<=target_level; i++){
+                    auto collected_error = collector.collect_level_error(NULL, 0, level_squared_errors[i].size(), level_error_bounds[i]);
+                    level_abs_errors.push_back(collected_error);
+                }
+                level_errors = level_abs_errors;
+            }
+            else if(std::is_base_of<SquaredErrorEstimator<T>, ErrorEstimator>::value){
+                std::cout << "ErrorEstimator is base of SquaredErrorEstimator, using level squared error directly" << std::endl;
+            }
+            else{
+                std::cerr << "Customized error estimator not supported yet" << std::endl;
+                exit(-1);
+            }
             level_num_bitplanes.clear();
             auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
             // print ratios
@@ -32,7 +52,6 @@ namespace MDR {
                 offsets[i] += retrieve_sizes[i];
             }
             // check whether to reconstruct to full resolution
-            uint8_t target_level = level_error_bounds.size() - 1;
             int skipped_level = 0;
             for(int i=0; i<=target_level; i++){
                 if(level_num_bitplanes[target_level - i] != 0){
@@ -60,7 +79,7 @@ namespace MDR {
             deserialize(metadata_pos, num_dims, dimensions);
             uint8_t num_levels = *(metadata_pos ++);
             deserialize(metadata_pos, num_levels, level_error_bounds);
-            deserialize(metadata_pos, num_levels, level_errors);
+            deserialize(metadata_pos, num_levels, level_squared_errors);
             deserialize(metadata_pos, num_levels, level_sizes);
             offsets = std::vector<uint32_t>(num_levels, 0);
             free(metadata);
@@ -73,6 +92,7 @@ namespace MDR {
             std::cout << "Decomposer: "; decomposer.print();
             std::cout << "Interleaver: "; interleaver.print();
             std::cout << "Encoder: "; encoder.print();
+            std::cout << "SizeInterpreter: "; interpreter.print();
             std::cout << "Retriever: "; retriever.print();
         }
     private:
@@ -157,7 +177,7 @@ namespace MDR {
         std::vector<uint8_t> level_num_bitplanes;
         std::vector<std::vector<const uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
-        std::vector<std::vector<double>> level_errors;
+        std::vector<std::vector<double>> level_squared_errors;
     };
 }
 #endif

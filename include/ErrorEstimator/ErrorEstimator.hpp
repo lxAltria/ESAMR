@@ -2,6 +2,6 @@
 #define _MDR_ERROR_ESTIMATOR_HPP
 
 #include "MaxErrorEstimator.hpp"
-#include "SNormErrorEstimator.hpp"
+#include "SquaredErrorEstimator.hpp"
 
 #endif

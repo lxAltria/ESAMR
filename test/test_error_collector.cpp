@@ -7,8 +7,7 @@
 #include <bitset>
 #include "utils.hpp"
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
-#include "ErrorCollector/MaxErrorCollector.hpp"
-#include "ErrorCollector/SNormErrorCollector.hpp"
+#include "ErrorCollector/ErrorCollector.hpp"
 
 #define MAX(a, b) (a>b) ? (a) : (b)
 using namespace std;
@@ -88,7 +87,7 @@ void test(string filename){
     }
     compute_true_errors(data, num_elements, max_val);
     evaluate(data, num_elements, max_val, MDR::MaxErrorCollector<T>());
-    evaluate(data, num_elements, max_val, MDR::SNormErrorCollector<T>());
+    evaluate(data, num_elements, max_val, MDR::SquaredErrorCollector<T>());
 }
 
 int main(int argc, char ** argv){

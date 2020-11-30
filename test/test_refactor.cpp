@@ -61,7 +61,7 @@ int main(int argc, char ** argv){
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
     auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto collector = MDR::SNormErrorCollector<T>();
+    auto collector = MDR::SquaredErrorCollector<T>();
     // auto collector = MDR::MaxErrorCollector<T>();
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, collector);

@@ -24,9 +24,9 @@ void evaluate(const vector<T>& data, double tolerance, Reconstructor reconstruct
     MGARD::print_statistics(data.data(), reconstructed_data, data.size());
 }
 
-template <class T, class Decomposer, class Interleaver, class Encoder, class SizeInterpreter, class Retriever>
-void test(string filename, double tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, SizeInterpreter interpreter, Retriever retriever){
-    auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, SizeInterpreter, Retriever>(decomposer, interleaver, encoder, interpreter, retriever);
+template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorEstimator, class SizeInterpreter, class Retriever>
+void test(string filename, double tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
+    auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, interpreter, retriever);
     cout << "loading metadata" << endl;
     reconstructor.load_metadata();
 
@@ -45,10 +45,10 @@ int main(int argc, char ** argv){
     int num_levels = 0;
     int num_dims = 0;
     {
+        // metadata interpreter, otherwise information needs to be provided
         size_t num_bytes = 0;
         auto metadata = MGARD::readfile<uint8_t>(metadata_file.c_str(), num_bytes);
         assert(num_bytes > num_dims * sizeof(uint32_t) + 2);
-        // metadata interpreter, otherwise information needs to be provided
         num_dims = metadata[0];
         num_levels = metadata[num_dims * sizeof(uint32_t) + 1];
         cout << "number of dimension = " << num_dims << ", number of levels = " << num_levels << endl;
@@ -66,8 +66,10 @@ int main(int argc, char ** argv){
     auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, 0);
     auto interpreter = MDR::InorderSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
+    // auto estimator = MDR::MaxErrorEstimatorOB<T>(num_dims);
+    // auto interpreter = MDR::InorderSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
     auto retriever = MDR::FileRetriever(metadata_file, files);
 
-    test<T>(filename, tolerance, decomposer, interleaver, encoder, interpreter, retriever);
+    test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
     return 0;
 }

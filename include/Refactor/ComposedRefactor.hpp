@@ -53,14 +53,14 @@ namespace MDR {
 
         uint8_t * dump_metadata(uint32_t& metadata_size) const {
             metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
-                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_errors) + get_size(level_sizes); // level information
+                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
             *(metadata_pos ++) = (uint8_t) dimensions.size();
             serialize(dimensions, metadata_pos);
             *(metadata_pos ++) = (uint8_t) level_error_bounds.size();
             serialize(level_error_bounds, metadata_pos);
-            serialize(level_errors, metadata_pos);
+            serialize(level_squared_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
             return metadata;
         }
@@ -92,12 +92,13 @@ namespace MDR {
             auto lossless_compressor = ZSTD();
             // encode level by level
             level_error_bounds.clear();
-            level_errors.clear();
+            level_squared_errors.clear();
             level_components.clear();
             level_sizes.clear();
             auto level_dims = compute_level_dims(dimensions, target_level);
             auto level_elements = compute_level_elements(level_dims, target_level);
             std::vector<uint32_t> dims_dummy(dimensions.size(), 0);
+            SquaredErrorCollector<T> s_collector = SquaredErrorCollector<T>();
             for(int i=0; i<=target_level; i++){
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
                 T * buffer = (T *) malloc(level_elements[i] * sizeof(T));
@@ -107,9 +108,8 @@ namespace MDR {
                 T level_max_error = compute_max_abs_value(reinterpret_cast<T*>(buffer), level_elements[i]);
                 level_error_bounds.push_back(level_max_error);
                 // collect errors
-                auto collected_error = collector.collect_level_error(buffer, level_elements[i], num_bitplanes, level_max_error);
-                level_errors.push_back(collected_error);
-                std::cout << collected_error.size() << std::endl;
+                auto collected_error = s_collector.collect_level_error(buffer, level_elements[i], num_bitplanes, level_max_error);
+                level_squared_errors.push_back(collected_error);
                 // encode level data
                 int level_exp = 0;
                 frexp(level_max_error, &level_exp);
@@ -142,7 +142,7 @@ namespace MDR {
         std::vector<T> level_error_bounds;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
-        std::vector<std::vector<double>> level_errors;
+        std::vector<std::vector<double>> level_squared_errors;
     };
 }
 #endif

@@ -1,12 +1,15 @@
-#ifndef _MDR_S_NORM_ERROR_ESTIMATOR_HPP
-#define _MDR_S_NORM_ERROR_ESTIMATOR_HPP
+#ifndef _MDR_SQUARED_ERROR_ESTIMATOR_HPP
+#define _MDR_SQUARED_ERROR_ESTIMATOR_HPP
 
 #include "ErrorEstimatorInterface.hpp"
 
 namespace MDR {
+    template<class T>
+    class SquaredErrorEstimator : public concepts::ErrorEstimatorInterface<T>{};
+
     // S-norm error estimator for orthogonal basis
     template<class T>
-    class SNormErrorEstimator : public concepts::ErrorEstimatorInterface<T> {
+    class SNormErrorEstimator : public SquaredErrorEstimator<T> {
     public:
         SNormErrorEstimator(int num_dims, int target_level, T s) : s(s) {
             s_table = std::vector<T>(target_level + 1);
