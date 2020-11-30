@@ -11,9 +11,9 @@ namespace MDR {
 
             virtual ~RefactorInterface() = default;
 
-            virtual std::vector<uint8_t *> refactor(T const * data, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, std::vector<uint32_t>& refactored_size) = 0;
+            virtual void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes) = 0;
 
-            virtual uint8_t * dump_metadata(uint32_t& metadata_size) const = 0;
+            virtual void write_metadata() const = 0;
 
             virtual void print() const = 0;
         };

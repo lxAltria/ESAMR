@@ -6,9 +6,9 @@
 
 namespace MDR {
     // Data retriever for files
-    class FileRetriever : public concepts::RetrieverInterface {
+    class ConcatLevelFileRetriever : public concepts::RetrieverInterface {
     public:
-        FileRetriever(const std::string& metadata_file, const std::vector<std::string>& level_files) : metadata_file(metadata_file), level_files(level_files) {}
+        ConcatLevelFileRetriever(const std::string& metadata_file, const std::vector<std::string>& level_files) : metadata_file(metadata_file), level_files(level_files) {}
 
         std::vector<uint8_t*> retrieve_level_components(const std::vector<uint32_t>& offsets, const std::vector<uint32_t>& retrieve_sizes) const {
             assert(offsets.size() == retrieve_sizes.size());
@@ -21,6 +21,7 @@ namespace MDR {
                 uint8_t * buffer = (uint8_t *) malloc(retrieve_sizes[i]);
                 fread(buffer, sizeof(uint8_t), retrieve_sizes[i], file);
                 level_components.push_back(buffer);
+                fclose(file);
             }
             return level_components;
         }
@@ -32,10 +33,11 @@ namespace MDR {
             rewind(file);
             uint8_t * metadata = (uint8_t *) malloc(num_bytes);
             fread(metadata, 1, num_bytes, file);
+            fclose(file);
             return metadata;
         }
 
-        ~FileRetriever(){}
+        ~ConcatLevelFileRetriever(){}
 
         void print() const {
             std::cout << "File retriever." << std::endl;

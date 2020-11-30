@@ -68,7 +68,7 @@ int main(int argc, char ** argv){
     auto interpreter = MDR::InorderSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
     // auto estimator = MDR::MaxErrorEstimatorOB<T>(num_dims);
     // auto interpreter = MDR::InorderSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
-    auto retriever = MDR::FileRetriever(metadata_file, files);
+    auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
 
     test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
     return 0;

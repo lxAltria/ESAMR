@@ -7,52 +7,37 @@
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "ErrorCollector/ErrorCollector.hpp"
 #include "LosslessCompressor/LosslessCompressor.hpp"
+#include "Writer/Writer.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
     // a decomposition-based scientific data refactor: compose a refactor using decomposer, interleaver, encoder, and error collector
-    template<class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector>
+    template<class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector, class Writer>
     class ComposedRefactor : public concepts::RefactorInterface<T> {
     public:
-        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), collector(collector){}
+        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector, Writer writer)
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), collector(collector), writer(writer) {}
 
-        std::vector<uint8_t *> refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, std::vector<uint32_t>& refactored_size){
+        void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes){
             dimensions = dims;
             uint32_t num_elements = 1;
             for(const auto& dim:dimensions){
                 num_elements *= dim;
             }
             data = std::vector<T>(data_, data_ + num_elements);
-            refactored_size.clear();
             // if refactor successfully
             if(refactor(target_level, num_bitplanes)){
-                // concatenate level components
-                std::vector<uint8_t *> refactored_data;
-                for(int i=0; i<level_components.size(); i++){
-                    uint32_t level_total_size = 0;
-                    for(int j=0; j<level_components[i].size(); j++){
-                        level_total_size += level_sizes[i][j];
-                    }
-                    uint8_t * refactored_level_data = (uint8_t *) malloc(level_total_size);
-                    uint8_t * refactored_level_data_pos = refactored_level_data;
-                    for(int j=0; j<level_components[i].size(); j++){
-                        memcpy(refactored_level_data_pos, level_components[i][j], level_sizes[i][j]);
-                        refactored_level_data_pos += level_sizes[i][j];
-                    }
-                    refactored_data.push_back(refactored_level_data);
-                    refactored_size.push_back(level_total_size);
+                writer.write_level_components(level_components, level_sizes);
+            }
+            for(int i=0; i<level_components.size(); i++){
+                for(int j=0; j<level_components[i].size(); j++){
+                    free(level_components[i][j]);                    
                 }
-                return refactored_data;
             }
-            else{
-                return std::vector<uint8_t *>();
-            }
-
         }
 
-        uint8_t * dump_metadata(uint32_t& metadata_size) const {
-            metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
+        void write_metadata() const {
+            uint32_t metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
                             + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
@@ -62,16 +47,11 @@ namespace MDR {
             serialize(level_error_bounds, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
-            return metadata;
+            writer.write_metadata(metadata, metadata_size);
+            free(metadata);
         }
 
-        ~ComposedRefactor(){
-            for(int i=0; i<level_components.size(); i++){
-                for(int j=0; j<level_components[i].size(); j++){
-                    free(level_components[i][j]);                    
-                }
-            }
-        }
+        ~ComposedRefactor(){}
 
         void print() const {
             std::cout << "Composed refactor with the following components." << std::endl;
@@ -137,6 +117,7 @@ namespace MDR {
         Interleaver interleaver;
         Encoder encoder;
         ErrorCollector collector;
+        Writer writer;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
