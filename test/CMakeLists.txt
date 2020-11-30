@@ -14,10 +14,6 @@ add_executable (test_error_collector test_error_collector.cpp)
 target_include_directories(test_error_collector PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
 target_link_libraries(test_error_collector ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
 
-add_executable (test_retriever test_retriever.cpp)
-target_include_directories(test_retriever PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
-target_link_libraries(test_retriever ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
-
 add_executable (test_refactor test_refactor.cpp)
 target_include_directories(test_refactor PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
 target_link_libraries(test_refactor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})

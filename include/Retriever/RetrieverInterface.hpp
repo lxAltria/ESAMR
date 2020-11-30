@@ -10,7 +10,9 @@ namespace MDR {
 
             virtual ~RetrieverInterface() = default;
 
-            virtual uint32_t interpret_size(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<std::vector<double>>& level_errors, const std::vector<uint8_t>& order, double tolerance, std::vector<uint8_t>& index) const = 0;
+            virtual std::vector<uint8_t*> retrieve_level_components(const std::vector<uint32_t>& offsets, const std::vector<uint32_t>& retrieve_sizes) const = 0;
+
+            virtual uint8_t * load_metadata() const = 0;
 
             virtual void print() const = 0;
         };

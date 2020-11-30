@@ -15,26 +15,30 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
     struct timespec start, end;
     int err = 0;
 
-    uint32_t refactored_size = 0;
+    vector<uint32_t> refactored_size;
     cout << "Start refactoring" << endl;
     err = clock_gettime(CLOCK_REALTIME, &start);
     auto refactored_data = refactor.refactor(data.data(), dims, target_level, num_bitplanes, refactored_size);
     err = clock_gettime(CLOCK_REALTIME, &end);
     cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
-    cout << "Refactored data size = " << refactored_size << endl;
-    MGARD::writefile("refactored_data.bin", refactored_data, refactored_size);
-    free(refactored_data);
+    for(int i=0; i<refactored_data.size(); i++){
+        int level = i;
+        string filename = "refactored_data/level_" + to_string(level) + ".bin";
+        MGARD::writefile(filename.c_str(), refactored_data[i], refactored_size[i]);
+        cout << "Refactored level " << level << " size = " << refactored_size[i] << endl;
+        free(refactored_data[i]);
+    }
 
     uint32_t metadata_size = 0;
     auto metadata = refactor.dump_metadata(metadata_size);
-    MGARD::writefile("metadata.bin", metadata, metadata_size);
+    MGARD::writefile("refactored_data/metadata.bin", metadata, metadata_size);
     free(metadata);
 
 }
 
-template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector, class Reorganizer>
-void test(string filename, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector, Reorganizer reorganizer){
-    auto refactor = MDR::ComposedRefactor<T, Decomposer, Interleaver, Encoder, ErrorCollector, Reorganizer>(decomposer, interleaver, encoder, collector, reorganizer);
+template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector>
+void test(string filename, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector){
+    auto refactor = MDR::ComposedRefactor<T, Decomposer, Interleaver, Encoder, ErrorCollector>(decomposer, interleaver, encoder, collector);
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     evaluate(data, dims, target_level, num_bitplanes, refactor);
@@ -59,8 +63,7 @@ int main(int argc, char ** argv){
     auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto collector = MDR::SNormErrorCollector<T>();
     // auto collector = MDR::MaxErrorCollector<T>();
-    auto reorganizer = MDR::InOrderReorganizer();
 
-    test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, collector, reorganizer);
+    test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, collector);
     return 0;
 }

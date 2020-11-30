@@ -7,21 +7,30 @@
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "Retriever/Retriever.hpp"
 #include "ErrorEstimator/ErrorEstimator.hpp"
+#include "SizeInterpreter/SizeInterpreter.hpp"
 #include "LosslessCompressor/LosslessCompressor.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
     // a decomposition-based scientific data reconstructor: inverse operator of composed refactor
-    template<class T, class Decomposer, class Interleaver, class Encoder, class Retriever>
+    template<class T, class Decomposer, class Interleaver, class Encoder, class SizeInterpreter, class Retriever>
     class ComposedReconstructor : public concepts::ReconstructorInterface<T> {
     public:
-        ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Retriever retriever)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), retriever(retriever){}
+        ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, SizeInterpreter interpreter, Retriever retriever)
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), interpreter(interpreter), retriever(retriever){}
 
-        T * reconstruct(uint8_t const * refactored_data, double tolerance){
+        T * reconstruct(double tolerance){
             level_num_bitplanes.clear();
-            uint32_t retrieve_size = retriever.interpret_size(level_sizes, level_errors, level_order, tolerance, level_num_bitplanes);
-            load_level_components(refactored_data, retrieve_size);
+            auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
+            // print ratios
+            print_ratio(retrieve_sizes);
+            // retrieve data
+            auto concated_level_components = retriever.retrieve_level_components(offsets, retrieve_sizes);
+            interleave_level_components(concated_level_components);
+            // increment offset for progressive reading
+            for(int i=0; i<offsets.size(); i++){
+                offsets[i] += retrieve_sizes[i];
+            }
             // check whether to reconstruct to full resolution
             uint8_t target_level = level_error_bounds.size() - 1;
             int skipped_level = 0;
@@ -33,14 +42,19 @@ namespace MDR {
             }
             target_level -= skipped_level;
 
-            if(reconstruct(target_level)) return data.data();
+            bool success = reconstruct(target_level);
+            for(int i=0; i<concated_level_components.size(); i++){
+                free(concated_level_components[i]);
+            }
+            if(success) return data.data();
             else{
                 std::cerr << "Recontruct unsuccessful, return NULL pointer" << std::endl;
                 return NULL;
             }
         }
 
-        void load_metadata(uint8_t const * metadata){
+        void load_metadata(){
+            uint8_t * metadata = retriever.load_metadata();
             uint8_t const * metadata_pos = metadata;
             uint8_t num_dims = *(metadata_pos ++);
             deserialize(metadata_pos, num_dims, dimensions);
@@ -48,9 +62,8 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_error_bounds);
             deserialize(metadata_pos, num_levels, level_errors);
             deserialize(metadata_pos, num_levels, level_sizes);
-            uint32_t num_level_orders = *reinterpret_cast<const uint32_t*>(metadata_pos);
-            metadata_pos += sizeof(uint32_t);
-            deserialize(metadata_pos, num_level_orders, level_order);
+            offsets = std::vector<uint32_t>(num_levels, 0);
+            free(metadata);
         }
 
         ~ComposedReconstructor(){}
@@ -64,20 +77,31 @@ namespace MDR {
         }
     private:
 
-        bool load_level_components(uint8_t const * refactored_data, uint32_t retrieve_size){
-            level_components.clear();
-            for(int i=0; i<level_sizes.size(); i++){
-                level_components.push_back(std::vector<const uint8_t*>());
+        void print_ratio(const std::vector<uint32_t>& retrieve_sizes){
+            uint32_t total_size = 0;
+            for(const auto& size:retrieve_sizes){
+                total_size += size;
             }
-            const uint8_t * refactored_data_pos = refactored_data;
-            std::vector<int> index(level_sizes.size(), 0);
-            int count = 0;
-            while(refactored_data_pos - refactored_data < retrieve_size){
-                int level = level_order[count ++];
-                int bitplane_index = index[level];
-                level_components[level].push_back(refactored_data_pos);
-                refactored_data_pos += level_sizes[level][bitplane_index];
-                index[level] ++;
+            uint32_t num_elements = 1;
+            for(const auto& d:dimensions){
+                num_elements *= d;
+            }
+            for(int i=0; i<level_num_bitplanes.size(); i++){
+                std::cout << "Retrieve " << +level_num_bitplanes[i] << " bitplanes from level " << i << std::endl;
+            }
+            std::cout << "Total retrieved size = " << total_size << ", ratio = " << num_elements * 1.0 * sizeof(T) / total_size << std::endl; 
+        }
+
+        bool interleave_level_components(const std::vector<uint8_t*>& concated_level_components){
+            level_components.clear();
+            for(int i=0; i<level_num_bitplanes.size(); i++){
+                const uint8_t * pos = concated_level_components[i];
+                std::vector<const uint8_t*> interleaved_level;
+                for(int j=0; j<level_num_bitplanes[i]; j++){
+                    interleaved_level.push_back(pos);
+                    pos += level_sizes[i][j];
+                }
+                level_components.push_back(interleaved_level);
             }
             return true;
         }
@@ -124,7 +148,9 @@ namespace MDR {
         Decomposer decomposer;
         Interleaver interleaver;
         Encoder encoder;
+        SizeInterpreter interpreter;
         Retriever retriever;
+        std::vector<uint32_t> offsets;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
@@ -132,7 +158,6 @@ namespace MDR {
         std::vector<std::vector<const uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<std::vector<double>> level_errors;
-        std::vector<uint8_t> level_order;
     };
 }
 #endif

@@ -11,9 +11,9 @@ namespace MDR {
 
             virtual ~ReconstructorInterface() = default;
 
-            virtual T * reconstruct(uint8_t const * refactored_data, double tolerance) = 0;
+            virtual T * reconstruct(double tolerance) = 0;
 
-            virtual void load_metadata(uint8_t const * metadata) = 0;
+            virtual void load_metadata() = 0;
 
             virtual void print() const = 0;
         };

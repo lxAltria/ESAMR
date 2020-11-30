@@ -6,42 +6,54 @@
 #include "Interleaver/Interleaver.hpp"
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "ErrorCollector/ErrorCollector.hpp"
-#include "Reorganizer/Reorganizer.hpp"
 #include "LosslessCompressor/LosslessCompressor.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
-    // a decomposition-based scientific data refactor: compose a refactor using decomposer, interleaver, encoder, error collector, and reorganizer
-    template<class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector, class Reorganizer>
+    // a decomposition-based scientific data refactor: compose a refactor using decomposer, interleaver, encoder, and error collector
+    template<class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector>
     class ComposedRefactor : public concepts::RefactorInterface<T> {
     public:
-        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector, Reorganizer reorganizer)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), collector(collector), reorganizer(reorganizer){}
+        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector)
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), collector(collector){}
 
-        uint8_t * refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, uint32_t& refactored_size){
+        std::vector<uint8_t *> refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, std::vector<uint32_t>& refactored_size){
             dimensions = dims;
             uint32_t num_elements = 1;
             for(const auto& dim:dimensions){
                 num_elements *= dim;
             }
             data = std::vector<T>(data_, data_ + num_elements);
+            refactored_size.clear();
             // if refactor successfully
             if(refactor(target_level, num_bitplanes)){
-                refactored_size = 0;
-                level_order.clear();
-                auto refactored_data = reorganizer.reorganize(level_components, level_sizes, level_order, refactored_size);
+                // concatenate level components
+                std::vector<uint8_t *> refactored_data;
+                for(int i=0; i<level_components.size(); i++){
+                    uint32_t level_total_size = 0;
+                    for(int j=0; j<level_components[i].size(); j++){
+                        level_total_size += level_sizes[i][j];
+                    }
+                    uint8_t * refactored_level_data = (uint8_t *) malloc(level_total_size);
+                    uint8_t * refactored_level_data_pos = refactored_level_data;
+                    for(int j=0; j<level_components[i].size(); j++){
+                        memcpy(refactored_level_data_pos, level_components[i][j], level_sizes[i][j]);
+                        refactored_level_data_pos += level_sizes[i][j];
+                    }
+                    refactored_data.push_back(refactored_level_data);
+                    refactored_size.push_back(level_total_size);
+                }
                 return refactored_data;
             }
             else{
-                return NULL;
+                return std::vector<uint8_t *>();
             }
 
         }
 
         uint8_t * dump_metadata(uint32_t& metadata_size) const {
             metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
-                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_errors) + get_size(level_sizes) // level information
-                            + sizeof(uint32_t) + get_size(level_order); // level order
+                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_errors) + get_size(level_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
             *(metadata_pos ++) = (uint8_t) dimensions.size();
@@ -50,9 +62,6 @@ namespace MDR {
             serialize(level_error_bounds, metadata_pos);
             serialize(level_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
-            *(reinterpret_cast<uint32_t*>(metadata_pos)) = (uint32_t) level_order.size();
-            metadata_pos += sizeof(uint32_t);
-            serialize(level_order, metadata_pos);
             return metadata;
         }
 
@@ -69,7 +78,6 @@ namespace MDR {
             std::cout << "Decomposer: "; decomposer.print();
             std::cout << "Interleaver: "; interleaver.print();
             std::cout << "Encoder: "; encoder.print();
-            std::cout << "Reorganizer: "; reorganizer.print();
         }
     private:
         bool refactor(uint8_t target_level, uint8_t num_bitplanes){
@@ -129,14 +137,12 @@ namespace MDR {
         Interleaver interleaver;
         Encoder encoder;
         ErrorCollector collector;
-        Reorganizer reorganizer;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<std::vector<double>> level_errors;
-        std::vector<uint8_t> level_order;
     };
 }
 #endif
