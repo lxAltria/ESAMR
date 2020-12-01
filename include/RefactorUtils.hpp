@@ -123,5 +123,23 @@ namespace MDR {
         }
     }
 
+    // print vector
+    template <class T>
+    void print_vec(const std::vector<T>& vec){
+        for(int i=0; i<vec.size(); i++){
+            std::cout << vec[i] << " ";
+        }
+        std::cout << std::endl;
+    }
+    // print nested vector
+    template <class T>
+    void print_vec(const std::string& name, const std::vector<std::vector<T>>& vec){
+        std::cout << name << std::endl;
+        for(int i=0; i<vec.size(); i++){
+            print_vec(vec[i]);
+        }
+        std::cout << std::endl;
+    }
+
 }
 #endif

@@ -26,6 +26,9 @@ namespace MDR {
         inline T estimate_error(T data, T reconstructed_data, int level) const {
             return s_table[level] * (data - reconstructed_data);
         }
+        inline T estimate_error_gain(T base, T current_level_err, T next_level_err, int level) const {
+            return s_table[level] * (current_level_err - next_level_err);
+        }
         void print() const {
             std::cout << "S-norm error estimator (s = " << s << ")." << std::endl;
         }

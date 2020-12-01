@@ -17,6 +17,8 @@ namespace MDR {
 
             virtual inline T estimate_error(T data, T reconstructed_data, int level) const = 0;
 
+            virtual inline T estimate_error_gain(T base, T current_level_err, T next_level_err, int level) const = 0;
+
             virtual void print() const = 0;
         };
     }

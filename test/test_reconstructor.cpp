@@ -39,7 +39,9 @@ int main(int argc, char ** argv){
 
     int argv_id = 1;
     string filename = string(argv[argv_id ++]);
+    int error_mode = atoi(argv[argv_id++]);
     double tolerance = atof(argv[argv_id ++]);
+    double s = atof(argv[argv_id ++]);
 
     string metadata_file = "metadata.bin";
     int num_levels = 0;
@@ -64,12 +66,19 @@ int main(int argc, char ** argv){
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
     auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, 0);
-    auto interpreter = MDR::InorderSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
-    // auto estimator = MDR::MaxErrorEstimatorOB<T>(num_dims);
-    // auto interpreter = MDR::InorderSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
-
-    test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
+    switch(error_mode){
+        case 1:{
+            auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, s);
+            auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
+            test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);            
+            break;
+        }
+        default:{
+            auto estimator = MDR::MaxErrorEstimatorOB<T>(num_dims);
+            auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
+            test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
+        }
+    }    
     return 0;
 }

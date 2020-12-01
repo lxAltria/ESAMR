@@ -5,7 +5,9 @@
 
 namespace MDR {
     template<class T>
-    class MaxErrorEstimator : public concepts::ErrorEstimatorInterface<T>{};
+    class MaxErrorEstimator : public concepts::ErrorEstimatorInterface<T>{
+
+    };
     // max error estimator for orthogonal basis
     template<class T>
     class MaxErrorEstimatorOB : public MaxErrorEstimator<T> {
@@ -34,6 +36,9 @@ namespace MDR {
         inline T estimate_error(T data, T reconstructed_data, int level) const {
             return c * (data - reconstructed_data);
         }
+        inline T estimate_error_gain(T base, T current_level_err, T next_level_err, int level) const {
+            return c * (current_level_err - next_level_err);
+        }
         void print() const {
             std::cout << "Max absolute error estimator (up to 3 dimensions) for orthogonal basis." << std::endl;
         }
@@ -52,6 +57,9 @@ namespace MDR {
         }
         inline T estimate_error(T data, T reconstructed_data, int level) const {
             return data - reconstructed_data;
+        }
+        inline T estimate_error_gain(T base, T current_level_err, T next_level_err, int level) const {
+            return current_level_err - next_level_err;
         }
         void print() const {
             std::cout << "Max absolute error estimator for hierarchical basis." << std::endl;
