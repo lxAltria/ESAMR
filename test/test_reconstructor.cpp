@@ -43,7 +43,7 @@ int main(int argc, char ** argv){
     double tolerance = atof(argv[argv_id ++]);
     double s = atof(argv[argv_id ++]);
 
-    string metadata_file = "metadata.bin";
+    string metadata_file = "refactored_data/metadata.bin";
     int num_levels = 0;
     int num_dims = 0;
     {

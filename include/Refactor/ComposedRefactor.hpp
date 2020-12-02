@@ -29,6 +29,7 @@ namespace MDR {
             if(refactor(target_level, num_bitplanes)){
                 writer.write_level_components(level_components, level_sizes);
             }
+            write_metadata();
             for(int i=0; i<level_components.size(); i++){
                 for(int j=0; j<level_components[i].size(); j++){
                     free(level_components[i][j]);                    

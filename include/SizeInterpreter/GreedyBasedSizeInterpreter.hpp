@@ -103,6 +103,7 @@ namespace MDR {
                     double error_gain = error_estimator.estimate_error_gain(accumulated_error, level_errors[i][index[i]], level_errors[i][index[i] + 1], i);
                     heap.push(UnitErrorGain(error_gain / level_sizes[i][index[i]], i));
                 }
+                std::cout << i;
                 if(min_error < tolerance){
                     // the min error of first 0~i levels meets the tolerance
                     num_levels = i + 1;

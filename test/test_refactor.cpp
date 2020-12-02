@@ -41,7 +41,7 @@ int main(int argc, char ** argv){
         dims[i] = atoi(argv[argv_id ++]);
     }
 
-    string metadata_file = "metadata.bin";
+    string metadata_file = "refactored_data/metadata.bin";
     vector<string> files;
     for(int i=0; i<=target_level; i++){
         string filename = "refactored_data/level_" + to_string(i) + ".bin";
