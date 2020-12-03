@@ -51,9 +51,9 @@ int main(int argc, char ** argv){
     using T_stream = uint32_t;
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
-    auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     auto collector = MDR::SquaredErrorCollector<T>();
-    // auto collector = MDR::MaxErrorCollector<T>();
     auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, collector, writer);

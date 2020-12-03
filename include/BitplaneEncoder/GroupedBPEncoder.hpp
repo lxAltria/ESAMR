@@ -76,12 +76,11 @@ namespace MDR {
             return streams;
         }
 
-        T_data * decode(const std::vector<uint8_t const *>& streams, size_t n, int exp, uint8_t num_bitplanes) const {
+        T_data * decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t num_bitplanes) const {
             assert(num_bitplanes > 0);
             uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
             // define fixed point type
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
-            // define manttisa
             T_data * data = (T_data *) malloc(n * sizeof(T_data));
             std::vector<T_stream const *> streams_pos(streams.size());
             for(int i=0; i<streams.size(); i++){
