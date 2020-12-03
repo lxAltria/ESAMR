@@ -1,24 +1,83 @@
-#ifndef _MDR_GROUPED_BP_ENCODER_HPP
-#define _MDR_GROUPED_BP_ENCODER_HPP
+#ifndef _MDR_PERBIT_BP_ENCODER_HPP
+#define _MDR_PERBIT_BP_ENCODER_HPP
 
 #include "BitplaneEncoderInterface.hpp"
 
 namespace MDR {
-    // general bitplane encoder that encodes data by block using T_stream type buffer
-    template<class T_data, class T_stream>
-    class GroupedBPEncoder : public concepts::BitplaneEncoderInterface<T_data> {
+    class BitEncoder{
     public:
-        GroupedBPEncoder(){
-            static_assert(std::is_floating_point<T_data>::value, "GeneralBPEncoder: input data must be floating points.");
-            static_assert(!std::is_same<T_data, long double>::value, "GeneralBPEncoder: long double is not supported.");
-            static_assert(std::is_unsigned<T_stream>::value, "GroupedBPBlockEncoder: streams must be unsigned integers.");
-            static_assert(std::is_integral<T_stream>::value, "GroupedBPBlockEncoder: streams must be unsigned integers.");
+        BitEncoder(uint64_t * stream_begin_pos){
+            stream_begin = stream_begin_pos;
+            stream_pos = stream_begin;
+            buffer = 0;
+            position = 0;
+        }
+        void encode(uint8_t b){
+            buffer += b << (position++);
+            if(position == 64){
+                *(stream_pos ++) = buffer;
+                buffer = 0;
+                position = 0;
+            }
+        }
+        void flush(){
+            if(position){
+                *(stream_pos ++) = buffer;
+                buffer = 0;
+                position = 0;
+            }
+        }
+        uint32_t size(){
+            return (stream_pos - stream_begin);
+        }
+    private:
+        uint64_t buffer = 0;
+        uint8_t position = 0;
+        uint64_t * stream_pos = NULL;
+        uint64_t * stream_begin = NULL;
+    };
+
+    class BitDecoder{
+    public:
+        BitDecoder(uint64_t * stream_begin_pos){
+            stream_begin = stream_begin_pos;
+            stream_pos = stream_begin;
+            buffer = *(stream_pos ++);
+            position = 64;
+        }
+        uint8_t decode(){
+            uint8_t b = buffer & 1u;
+            buffer >>= 1;
+            position --;
+            if(position == 0){
+                buffer = *(stream_pos ++);
+                position = 64;
+            }
+            return b;
+        }
+    private:
+        uint64_t buffer = 0;
+        uint8_t position = 0;
+        uint64_t const * stream_pos = NULL;
+        uint64_t const * stream_begin = NULL;
+    };
+
+
+    // per bit bitplane encoder that encodes data by bit using T_stream type buffer
+    template<class T_data, class T_stream>
+    class PerBitBPEncoder : public concepts::BitplaneEncoderInterface<T_data> {
+    public:
+        PerBitBPEncoder(){
+            static_assert(std::is_floating_point<T_data>::value, "PerBitBPEncoder: input data must be floating points.");
+            static_assert(!std::is_same<T_data, long double>::value, "PerBitBPEncoder: long double is not supported.");
+            static_assert(std::is_unsigned<T_stream>::value, "PerBitBPEncoder: streams must be unsigned integers.");
+            static_assert(std::is_integral<T_stream>::value, "PerBitBPEncoder: streams must be unsigned integers.");
         }
 
         std::vector<uint8_t *> encode(T_data const * data, int32_t n, int32_t exp, uint8_t num_bitplanes, std::vector<uint32_t>& stream_sizes) const {
             assert(num_bitplanes > 0);
             // determine block size based on bitplane integer type
-            uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
+            const uint32_t block_size = 64;
             std::vector<uint8_t> starting_bitplanes = std::vector<uint8_t>((n - 1)/block_size + 1, 0);
             stream_sizes = std::vector<uint32_t>(num_bitplanes, 0);
             // define fixed point type
@@ -28,23 +87,23 @@ namespace MDR {
                 streams.push_back((uint8_t *) malloc(2 * n / UINT8_BITS + sizeof(T_stream)));
             }
             std::vector<T_fp> int_data_buffer(block_size, 0);
+            std::vector<uint8_t> signs(block_size, 0);
             std::vector<T_stream *> streams_pos(streams.size());
             for(int i=0; i<streams.size(); i++){
                 streams_pos[i] = reinterpret_cast<T_stream*>(streams[i]);
             }
             T_data const * data_pos = data;
-            int block_id=0;
             for(int i=0; i<n - block_size; i+=block_size){
                 T_stream sign_bitplane = 0;
                 for(int j=0; j<block_size; j++){
                     T_data cur_data = *(data_pos++);
                     T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
                     int64_t fix_point = (int64_t) shifted_data;
-                    T_stream sign = cur_data < 0;
+                    bool sign = cur_data < 0;
                     int_data_buffer[j] = sign ? -fix_point : +fix_point;
-                    sign_bitplane += sign << j;
+                    signs[j] = sign;
                 }
-                starting_bitplanes[block_id ++] = encode_block(int_data_buffer.data(), block_size, num_bitplanes, sign_bitplane, streams_pos);
+                encode_block(int_data_buffer.data(), signs.data(), block_size, num_bitplanes, streams_pos);
             }
             // leftover
             {
@@ -63,16 +122,6 @@ namespace MDR {
             for(int i=0; i<num_bitplanes; i++){
                 stream_sizes[i] = reinterpret_cast<uint8_t*>(streams_pos[i]) - streams[i];
             }
-            // merge starting_bitplane with the first bitplane
-            uint32_t merged_size = 0;
-            uint8_t * merged = merge_arrays(reinterpret_cast<uint8_t const*>(starting_bitplanes.data()), starting_bitplanes.size() * sizeof(uint8_t), reinterpret_cast<uint8_t*>(streams[0]), stream_sizes[0], merged_size);
-            free(streams[0]);
-            streams[0] = merged;
-            stream_sizes[0] = merged_size;
-            // for(int i=0; i<num_bitplanes; i++){
-            //     std::cout << stream_sizes[i] << " ";
-            // }
-            // std::cout << std::endl;
             return streams;
         }
 
@@ -126,31 +175,9 @@ namespace MDR {
         }
 
         void print() const {
-            std::cout << "Grouped bitplane encoder" << std::endl;
+            std::cout << "Per-bit bitplane encoder" << std::endl;
         }
     private:
-        template<class T>
-        uint32_t block_size_based_on_bitplane_int_type() const {
-            uint32_t block_size = 0;
-            if(std::is_same<T, uint64_t>::value){
-                block_size = 64;
-            }
-            else if(std::is_same<T, uint32_t>::value){
-                block_size = 32;
-            }
-            else if(std::is_same<T, uint16_t>::value){
-                block_size = 16;
-            }
-            else if(std::is_same<T, uint8_t>::value){
-                block_size = 8;
-            }
-            else{
-                std::cerr << "Integer type not supported." << std::endl;
-                exit(0);
-            }
-            return block_size;
-        }
-
         template <class T_int>
         uint8_t encode_block(T_int const * data, size_t n, uint8_t num_bitplanes, T_stream sign, std::vector<T_stream *>& streams_pos) const {
             bool recorded = false;
@@ -186,14 +213,6 @@ namespace MDR {
             return sign_bitplane;
         }
 
-        uint8_t * merge_arrays(uint8_t const * array1, uint32_t size1, uint8_t const * array2, uint32_t size2, uint32_t& merged_size) const {
-            merged_size = sizeof(uint32_t) + size1 + size2;
-            uint8_t * merged_array = (uint8_t *) malloc(merged_size);
-            *reinterpret_cast<uint32_t*>(merged_array) = size1;
-            memcpy(merged_array + sizeof(uint32_t), array1, size1);
-            memcpy(merged_array + sizeof(uint32_t) + size1, array2, size2);
-            return merged_array;
-        }
     };
 }
 #endif
