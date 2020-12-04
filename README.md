@@ -11,29 +11,19 @@ cd Multiprecision-data-refactoring<br />
 
 # Usage
 cd build<br />
-mkdir -p refactor_data<br />
-Refactor: ./test/test_refactor $data_file $data_type $encode_opt $reorder_opt $num_dims $dim0 $dim1 $dim2<br />
-./test/test_refactor ../external/SZ3/data/Uf48.bin.dat 0 3 0 1 3 100 500 500<br />
-Retrieval: ./test/test_retrieval $data_file $data_type $error_mode $error $dims $dim0 $dim1 $dim2<br />
-./test/test_retrieval ../external/SZ3/data/Uf48.bin.dat 0 1 1.0 3 100 500 500<br />
+mkdir -p refactored_data<br />
+Refactor: ./test/test_refactor $data_file $num_level $num_bitplanes $num_dims $dim0 $dim1 $dim2<br />
+./test/test_refactor ../external/SZ3/data/Uf48.bin.dat 4 32 3 100 500 500<br />
+Retrieval: ./test/test_retrieval $data_file $error_mode $error $s<br />
+./test/test_reconstructor ../external/SZ3/data/Uf48.bin.dat 0 1.0 0<br />
 
 # Notes and Parameters
-During refactoring, the location of refactored data is hardcoded to "refactor_data/" directory under current directory. Need to create the directory before writing.<br />
-During retrieving, the location of recomposed data is hardcded to "mgard.recompose" under current directory.<br />
+During refactoring, the location of refactored data is hardcoded to "refactored_data/" directory under current directory. Need to create the directory before writing.<br />
 data_file: path to input date file.<br />
-data_type: 0 for float, 1 for double.<br />
-encode_opt: encode options for bitplanes (see include/data_enc.hpp)<br />
-0: default bitplane encoding<br />
-1: default bitplane encoding with sign postpone, i.e. encoding the sign after first 1 of current data<br />
-2: runlength encoding<br />
-3: mix of default bitplane encoding and runlength encoding<br />
-4: mix of default bitplane encoding with sign postpone and runlength encoding<br />
-reorder_opt: reordering options for bitplanes (see include/error_est.hpp)<br />
-0: in order, which records bitplanes following level ordering (the same as MGARD)<br />
-1: round-robin, which iteratively picks one bitplane for each level<br />
-2: uniform error, which picks bitplane such that every level will have the same L-infinity error<br />
-3: greedy shuffling, which picks bitplane according to a greedy method<br />
+num_levels: number of target decomposition levels.<br />
+num_bitplanes: number of bitplanes for each level.<br />
+num_dims: number of dimensions.<br />
+Option: options of encoder/decomposer/retrieval etc. are viable, but not supported in commandline for now (see these components in different folders of include and alter the options in test/test_refactor.cpp and test/test_reconstruct.cpp)<br />
 error mode: error metric during retreival (see include/error_est.hpp)<br />
-1: max error, i.e. L-infty<br />
-2: squared error, i.e. L-2<br />
-3: PSNR<br />
+0: max error, i.e. L-infty<br />
+1: squared error, i.e. L-2<br />
