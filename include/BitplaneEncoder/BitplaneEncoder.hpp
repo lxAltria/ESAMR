@@ -3,6 +3,5 @@
 
 #include "GroupedBPEncoder.hpp"
 #include "PerBitBPEncoder.hpp"
-#include <cassert>
 
 #endif
