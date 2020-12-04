@@ -23,7 +23,7 @@ data_file: path to input date file.<br />
 num_levels: number of target decomposition levels.<br />
 num_bitplanes: number of bitplanes for each level.<br />
 num_dims: number of dimensions.<br />
-Option: options of encoder/decomposer/retrieval etc. are viable, but not supported in commandline for now (see these components in different folders of include and alter the options in test/test_refactor.cpp and test/test_reconstruct.cpp)<br />
+Option: options of encoder/decomposer/retrieval etc. are changeable, but not supported in commandline for now (see these components in different folders of include and alter the options in test/test_refactor.cpp and test/test_reconstruct.cpp)<br />
 error mode: error metric during retreival (see include/error_est.hpp)<br />
 0: max error, i.e. L-infty<br />
 1: squared error, i.e. L-2<br />
