@@ -14,6 +14,7 @@ namespace MDR {
             assert(offsets.size() == retrieve_sizes.size());
             std::vector<uint8_t*> level_components;
             for(int i=0; i<level_files.size(); i++){
+                std::cout << "Level " << i << ": offset = " << offsets[i] << ", retrieve size = " << retrieve_sizes[i] << std::endl;
                 FILE * file = fopen(level_files[i].c_str(), "r");
                 if(fseek(file, offsets[i], SEEK_SET)){
                     std::cerr << "Errors in fseek while retrieving from file" << std::endl;

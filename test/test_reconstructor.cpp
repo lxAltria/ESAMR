@@ -11,21 +11,23 @@
 using namespace std;
 
 template <class T, class Reconstructor>
-void evaluate(const vector<T>& data, double tolerance, Reconstructor reconstructor){
+void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstructor reconstructor){
     struct timespec start, end;
     int err = 0;
 
-    cout << "Start reconstruction" << endl;
-    err = clock_gettime(CLOCK_REALTIME, &start);
-    auto reconstructed_data = reconstructor.reconstruct(tolerance);
-    err = clock_gettime(CLOCK_REALTIME, &end);
-    cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
-    // TODO: add full resolution check
-    MGARD::print_statistics(data.data(), reconstructed_data, data.size());
+    for(int i=0; i<tolerance.size(); i++){
+        cout << "Start reconstruction" << endl;
+        err = clock_gettime(CLOCK_REALTIME, &start);
+        auto reconstructed_data = reconstructor.progressive_reconstruct(tolerance[i]);
+        err = clock_gettime(CLOCK_REALTIME, &end);
+        cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+        // TODO: add full resolution check
+        MGARD::print_statistics(data.data(), reconstructed_data, data.size());        
+    }
 }
 
 template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorEstimator, class SizeInterpreter, class Retriever>
-void test(string filename, double tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
+void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
     auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, interpreter, retriever);
     cout << "loading metadata" << endl;
     reconstructor.load_metadata();
@@ -40,7 +42,11 @@ int main(int argc, char ** argv){
     int argv_id = 1;
     string filename = string(argv[argv_id ++]);
     int error_mode = atoi(argv[argv_id++]);
-    double tolerance = atof(argv[argv_id ++]);
+    int num_tolerance = atoi(argv[argv_id ++]);
+    vector<double> tolerance(num_tolerance, 0);
+    for(int i=0; i<num_tolerance; i++){
+        tolerance[i] = atof(argv[argv_id ++]);    
+    }
     double s = atof(argv[argv_id ++]);
 
     string metadata_file = "refactored_data/metadata.bin";
@@ -64,9 +70,10 @@ int main(int argc, char ** argv){
     using T = float;
     using T_stream = uint32_t;
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
+    // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
-    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
     switch(error_mode){
         case 1:{
@@ -78,6 +85,8 @@ int main(int argc, char ** argv){
         default:{
             auto estimator = MDR::MaxErrorEstimatorOB<T>(num_dims);
             auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
+            // auto estimator = MDR::MaxErrorEstimatorHB<T>();
+            // auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::MaxErrorEstimatorHB<T>>(estimator);
             test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
         }
     }    

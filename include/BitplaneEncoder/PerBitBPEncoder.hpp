@@ -203,6 +203,9 @@ namespace MDR {
             return data;
         }
 
+        T_data * progressive_decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t starting_bitplane, uint8_t num_bitplanes, int level) {
+            return NULL;
+        }
         void print() const {
             std::cout << "Per-bit bitplane encoder" << std::endl;
         }

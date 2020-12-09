@@ -17,6 +17,8 @@ namespace MDR {
 
             virtual T_data * decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t num_bitplanes) const = 0;
 
+            virtual T_data * progressive_decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t starting_bitplane, uint8_t num_bitplanes, int level) = 0;
+
             virtual void print() const = 0;
 
         };

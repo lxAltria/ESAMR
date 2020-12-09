@@ -87,38 +87,136 @@ namespace MDR {
                 streams_pos[i] = reinterpret_cast<T_stream const *>(streams[i]);
             }
             // deinterleave the first bitplane
-            uint32_t starting_bitplane_size = *reinterpret_cast<int32_t const*>(streams_pos[0]);
-            uint8_t const * starting_bitplanes = reinterpret_cast<uint8_t const*>(streams_pos[0]) + sizeof(uint32_t);
-            streams_pos[0] = reinterpret_cast<T_stream const *>(starting_bitplanes + starting_bitplane_size);
+            uint32_t recording_bitplane_size = *reinterpret_cast<int32_t const*>(streams_pos[0]);
+            uint8_t const * recording_bitplanes = reinterpret_cast<uint8_t const*>(streams_pos[0]) + sizeof(uint32_t);
+            streams_pos[0] = reinterpret_cast<T_stream const *>(recording_bitplanes + recording_bitplane_size);
 
             std::vector<T_fp> int_data_buffer(block_size, 0);
             // decode
             T_data * data_pos = data;
             int block_id = 0;
             for(int i=0; i<n - block_size; i+=block_size){
-                memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
-                uint8_t starting_bitplane = starting_bitplanes[block_id ++];
-                T_stream sign_bitplane = 0;
-                if(starting_bitplane < num_bitplanes){
-                    sign_bitplane = decode_block(streams_pos, block_size, num_bitplanes - starting_bitplane, starting_bitplane, int_data_buffer.data());
+                uint8_t recording_bitplane = recording_bitplanes[block_id ++];
+                if(recording_bitplane < num_bitplanes){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    T_stream sign_bitplane = *(streams_pos[recording_bitplane] ++);
+                    decode_block(streams_pos, block_size, recording_bitplane, num_bitplanes - recording_bitplane, int_data_buffer.data());
+                    for(int j=0; j<block_size; j++, sign_bitplane >>= 1){
+                        T_data cur_data = ldexp((T_data)int_data_buffer[j], - num_bitplanes + exp);
+                        *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
+                    }
                 }
-                for(int j=0; j<block_size; j++, sign_bitplane >>= 1){
-                    T_data cur_data = ldexp((T_data)int_data_buffer[j], - num_bitplanes + exp);
-                    *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
+                else{
+                    for(int j=0; j<block_size; j++){
+                        *(data_pos ++) = 0;
+                    }
                 }
             }
             // leftover
             {
                 int rest_size = n - block_size * block_id;
-                memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
-                int starting_bitplane = starting_bitplanes[block_id ++];
+                int recording_bitplane = recording_bitplanes[block_id];
                 T_stream sign_bitplane = 0;
-                if(starting_bitplane < num_bitplanes){
-                    sign_bitplane = decode_block(streams_pos, rest_size, num_bitplanes - starting_bitplane, starting_bitplane, int_data_buffer.data());
+                if(recording_bitplane < num_bitplanes){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    sign_bitplane = *(streams_pos[recording_bitplane] ++);
+                    decode_block(streams_pos, block_size, recording_bitplane, num_bitplanes - recording_bitplane, int_data_buffer.data());
+                    for(int j=0; j<rest_size; j++, sign_bitplane >>= 1){
+                        T_data cur_data = ldexp((T_data)int_data_buffer[j], - num_bitplanes + exp);
+                        *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
+                    }
                 }
-                for(int j=0; j<rest_size; j++, sign_bitplane >>= 1){
-                    T_data cur_data = ldexp((T_data)int_data_buffer[j], - num_bitplanes + exp);
-                    *(data_pos++) = (sign_bitplane & 1u) ? -cur_data : cur_data;
+                else{
+                    for(int j=0; j<block_size; j++){
+                        *(data_pos ++) = 0;
+                    }
+                }
+            }
+            return data;
+        }
+
+        // decode the data and record necessary information for progressiveness
+        T_data * progressive_decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t starting_bitplane, uint8_t num_bitplanes, int level) {
+            assert(num_bitplanes > 0);
+            uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
+            // define fixed point type
+            using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
+            T_data * data = (T_data *) malloc(n * sizeof(T_data));
+            std::vector<T_stream const *> streams_pos(streams.size());
+            for(int i=0; i<streams.size(); i++){
+                streams_pos[i] = reinterpret_cast<T_stream const *>(streams[i]);
+            }
+            if(level_recording_bitplanes.size() == level){
+                // deinterleave the first bitplane
+                uint32_t recording_bitplane_size = *reinterpret_cast<int32_t const*>(streams_pos[0]);
+                uint8_t const * recording_bitplanes_pos = reinterpret_cast<uint8_t const*>(streams_pos[0]) + sizeof(uint32_t);
+                auto recording_bitplanes = std::vector<uint8_t>(recording_bitplanes_pos, recording_bitplanes_pos + recording_bitplane_size);
+                level_recording_bitplanes.push_back(recording_bitplanes);
+                streams_pos[0] = reinterpret_cast<T_stream const *>(recording_bitplanes_pos + recording_bitplane_size);
+            }
+
+            std::vector<T_fp> int_data_buffer(block_size, 0);
+            if(level_signs.size() == level){
+                level_signs.push_back(std::vector<uint8_t>(n, false));
+            }
+            const std::vector<uint8_t>& recording_bitplanes = level_recording_bitplanes[level];
+            std::vector<uint8_t>& signs = level_signs[level];
+            const uint8_t ending_bitplane = starting_bitplane + num_bitplanes;
+            // decode
+            T_data * data_pos = data;
+            int block_id = 0;
+            for(int i=0; i<n - block_size; i+=block_size){
+                uint8_t recording_bitplane = recording_bitplanes[block_id ++];
+                if(recording_bitplane < ending_bitplane){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    if(recording_bitplane >= starting_bitplane){
+                        // have not recorded signs for this block
+                        T_stream sign_bitplane = *(streams_pos[recording_bitplane - starting_bitplane] ++);
+                        for(int j=0; j<block_size; j++, sign_bitplane >>= 1){
+                            signs[i + j] = sign_bitplane & 1u;
+                        }
+                        decode_block(streams_pos, block_size, recording_bitplane - starting_bitplane, ending_bitplane - recording_bitplane, int_data_buffer.data());
+                    }                    
+                    else{
+                        decode_block(streams_pos, block_size, 0, num_bitplanes, int_data_buffer.data());                    
+                    }
+                    for(int j=0; j<block_size; j++){
+                        T_data cur_data = ldexp((T_data)int_data_buffer[j], - ending_bitplane + exp);
+                        *(data_pos++) = signs[i + j] ? -cur_data : cur_data;
+                    }
+                }
+                else{
+                    for(int j=0; j<block_size; j++){
+                        *(data_pos ++) = 0;
+                    }
+                }
+            }
+            // leftover
+            {
+                int rest_size = n - block_size * block_id;
+                uint8_t recording_bitplane = recording_bitplanes[block_id];
+                if(recording_bitplane < ending_bitplane){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    if(recording_bitplane >= starting_bitplane){
+                        // have not recorded signs for this block
+                        T_stream sign_bitplane = *(streams_pos[recording_bitplane - starting_bitplane] ++);
+                        for(int j=0; j<rest_size; j++, sign_bitplane >>= 1){
+                            signs[block_size * block_id + j] = sign_bitplane & 1u;
+                        }
+                        decode_block(streams_pos, rest_size, recording_bitplane - starting_bitplane, ending_bitplane - recording_bitplane, int_data_buffer.data());
+                    }
+                    else{
+                        decode_block(streams_pos, rest_size, 0, num_bitplanes, int_data_buffer.data());                    
+                    }
+                    for(int j=0; j<rest_size; j++){
+                        T_data cur_data = ldexp((T_data)int_data_buffer[j], - ending_bitplane + exp);
+                        *(data_pos++) = signs[block_size * block_id + j] ? -cur_data : cur_data;
+                    }
+                }
+                else{
+                    for(int j=0; j<rest_size; j++){
+                        *(data_pos ++) = 0;
+                    }
                 }
             }
             return data;
@@ -153,7 +251,7 @@ namespace MDR {
         template <class T_int>
         uint8_t encode_block(T_int const * data, size_t n, uint8_t num_bitplanes, T_stream sign, std::vector<T_stream *>& streams_pos) const {
             bool recorded = false;
-            uint8_t starting_bitplane = num_bitplanes;
+            uint8_t recording_bitplane = num_bitplanes;
             for(int k=num_bitplanes - 1; k>=0; k--){
                 T_stream bitplane_value = 0;
                 T_stream bitplane_index = num_bitplanes - 1 - k;
@@ -163,26 +261,24 @@ namespace MDR {
                 if(bitplane_value || recorded){
                     if(!recorded){
                         recorded = true;
-                        starting_bitplane = bitplane_index;
+                        recording_bitplane = bitplane_index;
                         *(streams_pos[bitplane_index] ++) = sign;
                     }
                     *(streams_pos[bitplane_index] ++) = bitplane_value;
                 }
             }
-            return starting_bitplane;
+            return recording_bitplane;
         }
 
         template <class T_int>
-        T_stream decode_block(std::vector<T_stream const *>& streams_pos, size_t n, uint8_t num_bitplanes, uint8_t starting_bitplane, T_int * data) const {
-            T_stream sign_bitplane = *(streams_pos[starting_bitplane] ++);
+        void decode_block(std::vector<T_stream const *>& streams_pos, size_t n, uint8_t recording_bitplane, uint8_t num_bitplanes, T_int * data) const {
             for(int k=num_bitplanes - 1; k>=0; k--){
-                T_stream bitplane_index = starting_bitplane + num_bitplanes - 1 - k;
+                T_stream bitplane_index = recording_bitplane + num_bitplanes - 1 - k;
                 T_stream bitplane_value = *(streams_pos[bitplane_index] ++);
                 for (int i=0; i<n; i++){
                     data[i] += ((bitplane_value >> i) & 1u) << k;
                 }
             }
-            return sign_bitplane;
         }
 
         uint8_t * merge_arrays(uint8_t const * array1, uint32_t size1, uint8_t const * array2, uint32_t size2, uint32_t& merged_size) const {
@@ -193,6 +289,9 @@ namespace MDR {
             memcpy(merged_array + sizeof(uint32_t) + size1, array2, size2);
             return merged_array;
         }
+
+        std::vector<std::vector<uint8_t>> level_signs;
+        std::vector<std::vector<uint8_t>> level_recording_bitplanes;
     };
 }
 #endif
