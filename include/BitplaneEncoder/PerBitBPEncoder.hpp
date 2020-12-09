@@ -82,7 +82,6 @@ namespace MDR {
             assert(num_bitplanes > 0);
             // determine block size based on bitplane integer type
             const int32_t block_size = PER_BIT_BLOCK_SIZE;
-            std::vector<uint8_t> starting_bitplanes = std::vector<uint8_t>((n - 1)/block_size + 1, 0);
             stream_sizes = std::vector<uint32_t>(num_bitplanes, 0);
             // define fixed point type
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;

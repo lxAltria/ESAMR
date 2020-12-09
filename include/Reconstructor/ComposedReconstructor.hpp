@@ -9,16 +9,16 @@
 #include "ErrorEstimator/ErrorEstimator.hpp"
 #include "ErrorCollector/ErrorCollector.hpp"
 #include "SizeInterpreter/SizeInterpreter.hpp"
-#include "LosslessCompressor/LosslessCompressor.hpp"
+#include "LosslessCompressor/LevelCompressor.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
     // a decomposition-based scientific data reconstructor: inverse operator of composed refactor
-    template<class T, class Decomposer, class Interleaver, class Encoder, class SizeInterpreter, class ErrorEstimator, class Retriever>
+    template<class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class SizeInterpreter, class ErrorEstimator, class Retriever>
     class ComposedReconstructor : public concepts::ReconstructorInterface<T> {
     public:
-        ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, SizeInterpreter interpreter, Retriever retriever)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), interpreter(interpreter), retriever(retriever){}
+        ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, SizeInterpreter interpreter, Retriever retriever)
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), interpreter(interpreter), retriever(retriever){}
 
         // reconstruct data from encoded streams
         T * reconstruct(double tolerance){
@@ -157,29 +157,15 @@ namespace MDR {
             }
             data.clear();
             data = std::vector<T>(num_elements, 0);
-            auto lossless_compressor = ZSTD();
+
             auto level_elements = compute_level_elements(level_dims, target_level);
             std::vector<uint32_t> dims_dummy(reconstruct_dimensions.size(), 0);
             for(int i=0; i<=target_level; i++){
-                std::vector<const uint8_t*> decompressed_level_compenents;
-                std::vector<uint8_t*> lossless_decompressed;                
-                for(int j=0; j<level_num_bitplanes[i] - prev_level_num_bitplanes[i]; j++){
-                    uint8_t * decompressed = NULL;
-                    // add the offset for level_sizes
-                    auto decompressed_size = lossless_compressor.decompress(level_components[i][j], level_sizes[i][j + prev_level_num_bitplanes[i]], &decompressed);
-                    decompressed_level_compenents.push_back(decompressed);
-                    if(decompressed != level_components[i][j]){
-                        lossless_decompressed.push_back(decompressed);                    
-                    }
-                }
+                compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i]);
                 int level_exp = 0;
                 frexp(level_error_bounds[i], &level_exp);
-                auto level_decoded_data = encoder.progressive_decode(decompressed_level_compenents, level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
-                // auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
-
-                for(int j=0; j<lossless_decompressed.size(); j++){
-                    free(lossless_decompressed[j]);
-                }
+                auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
+                compressor.decompress_release();
 
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
                 interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data());
@@ -194,6 +180,7 @@ namespace MDR {
         Encoder encoder;
         SizeInterpreter interpreter;
         Retriever retriever;
+        Compressor compressor;
         std::vector<uint32_t> offsets;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;

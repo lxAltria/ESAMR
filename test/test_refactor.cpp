@@ -21,9 +21,9 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
     cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
 }
 
-template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector, class Writer>
-void test(string filename, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector, Writer writer){
-    auto refactor = MDR::ComposedRefactor<T, Decomposer, Interleaver, Encoder, ErrorCollector, Writer>(decomposer, interleaver, encoder, collector, writer);
+template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorCollector, class Writer>
+void test(string filename, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorCollector collector, Writer writer){
+    auto refactor = MDR::ComposedRefactor<T, Decomposer, Interleaver, Encoder, Compressor, ErrorCollector, Writer>(decomposer, interleaver, encoder, compressor, collector, writer);
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     evaluate(data, dims, target_level, num_bitplanes, refactor);
@@ -54,9 +54,11 @@ int main(int argc, char ** argv){
     auto interleaver = MDR::DirectInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    auto compressor = MDR::DefaultLevelCompressor();
+    // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
     auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
 
-    test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, collector, writer);
+    test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);
     return 0;
 }

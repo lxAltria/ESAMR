@@ -83,9 +83,9 @@ namespace MDR {
     uint32_t get_size(const std::vector<std::vector<T>>& vec){
         uint32_t size = 0;
         for(int i=0; i<vec.size(); i++){
-            size += sizeof(uint32_t) + vec[i].size();
+            size += sizeof(uint32_t) + vec[i].size() * sizeof(T);
         }
-        return size * sizeof(T);
+        return size;
     }
 
     // Serialize/deserialize vectors

@@ -6,17 +6,17 @@
 #include "Interleaver/Interleaver.hpp"
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "ErrorCollector/ErrorCollector.hpp"
-#include "LosslessCompressor/LosslessCompressor.hpp"
+#include "LosslessCompressor/LevelCompressor.hpp"
 #include "Writer/Writer.hpp"
 #include "RefactorUtils.hpp"
 
 namespace MDR {
     // a decomposition-based scientific data refactor: compose a refactor using decomposer, interleaver, encoder, and error collector
-    template<class T, class Decomposer, class Interleaver, class Encoder, class ErrorCollector, class Writer>
+    template<class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorCollector, class Writer>
     class ComposedRefactor : public concepts::RefactorInterface<T> {
     public:
-        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorCollector collector, Writer writer)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), collector(collector), writer(writer) {}
+        ComposedRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorCollector collector, Writer writer)
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), collector(collector), writer(writer) {}
 
         void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes){
             dimensions = dims;
@@ -70,7 +70,6 @@ namespace MDR {
             // decompose data hierarchically
             decomposer.decompose(data.data(), dimensions, target_level);
 
-            auto lossless_compressor = ZSTD();
             // encode level by level
             level_error_bounds.clear();
             level_squared_errors.clear();
@@ -97,16 +96,8 @@ namespace MDR {
                 std::vector<uint32_t> stream_sizes;
                 auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes);
                 free(buffer);
-                // Optional lossless compression
-                for(int j=0; j<streams.size(); j++){
-                    uint8_t * compressed = NULL;
-                    auto compressed_size = lossless_compressor.compress(streams[j], stream_sizes[j], &compressed);
-                    if(compressed != streams[j]){
-                        free(streams[j]);
-                        streams[j] = compressed;
-                        stream_sizes[j] = compressed_size;
-                    }
-                }
+                // lossless compression
+                compressor.compress_level(streams, stream_sizes);
                 // record encoded level data and size
                 level_components.push_back(streams);
                 level_sizes.push_back(stream_sizes);
@@ -117,6 +108,7 @@ namespace MDR {
         Decomposer decomposer;
         Interleaver interleaver;
         Encoder encoder;
+        Compressor compressor;
         ErrorCollector collector;
         Writer writer;
         std::vector<T> data;

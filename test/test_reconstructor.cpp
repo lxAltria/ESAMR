@@ -26,9 +26,9 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
     }
 }
 
-template <class T, class Decomposer, class Interleaver, class Encoder, class ErrorEstimator, class SizeInterpreter, class Retriever>
-void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
-    auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, interpreter, retriever);
+template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorEstimator, class SizeInterpreter, class Retriever>
+void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
+    auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
     cout << "loading metadata" << endl;
     reconstructor.load_metadata();
 
@@ -74,12 +74,14 @@ int main(int argc, char ** argv){
     auto interleaver = MDR::DirectInterleaver<T>();
     auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    auto compressor = MDR::DefaultLevelCompressor();
+    // auto compressor = MDR::NullLevelCompressor();
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
     switch(error_mode){
         case 1:{
             auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, s);
             auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
-            test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);            
+            test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);            
             break;
         }
         default:{
@@ -87,7 +89,7 @@ int main(int argc, char ** argv){
             auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::MaxErrorEstimatorOB<T>>(estimator);
             // auto estimator = MDR::MaxErrorEstimatorHB<T>();
             // auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::MaxErrorEstimatorHB<T>>(estimator);
-            test<T>(filename, tolerance, decomposer, interleaver, encoder, estimator, interpreter, retriever);
+            test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);
         }
     }    
     return 0;
