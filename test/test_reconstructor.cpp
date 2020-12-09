@@ -72,8 +72,8 @@ int main(int argc, char ** argv){
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
-    // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
     switch(error_mode){
         case 1:{

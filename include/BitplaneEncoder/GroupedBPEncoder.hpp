@@ -157,10 +157,10 @@ namespace MDR {
 
             std::vector<T_fp> int_data_buffer(block_size, 0);
             if(level_signs.size() == level){
-                level_signs.push_back(std::vector<uint8_t>(n, false));
+                level_signs.push_back(std::vector<bool>(n, false));
             }
             const std::vector<uint8_t>& recording_bitplanes = level_recording_bitplanes[level];
-            std::vector<uint8_t>& signs = level_signs[level];
+            std::vector<bool>& signs = level_signs[level];
             const uint8_t ending_bitplane = starting_bitplane + num_bitplanes;
             // decode
             T_data * data_pos = data;
@@ -290,7 +290,7 @@ namespace MDR {
             return merged_array;
         }
 
-        std::vector<std::vector<uint8_t>> level_signs;
+        std::vector<std::vector<bool>> level_signs;
         std::vector<std::vector<uint8_t>> level_recording_bitplanes;
     };
 }
