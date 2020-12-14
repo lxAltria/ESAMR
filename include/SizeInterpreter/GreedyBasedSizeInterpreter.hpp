@@ -28,17 +28,15 @@ namespace MDR {
         std::vector<uint32_t> interpret_retrieve_size(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<std::vector<double>>& level_errors, double tolerance, std::vector<uint8_t>& index) const {
             const int num_levels = level_sizes.size();
             std::vector<uint32_t> retrieve_sizes(num_levels, 0);
-            index.clear();
-            index.resize(num_levels, 0);
 
             double accumulated_error = 0;
             for(int i=0; i<num_levels; i++){
-                accumulated_error += error_estimator.estimate_error(level_errors[i][0], i);
+                accumulated_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
             }
             std::priority_queue<UnitErrorGain, std::vector<UnitErrorGain>, CompareUniteErrorGain> heap;
             for(int i=0; i<num_levels; i++){
-                double error_gain = error_estimator.estimate_error_gain(accumulated_error, level_errors[i][0], level_errors[i][1], i);
-                heap.push(UnitErrorGain(error_gain / level_sizes[i][0], i));
+                double error_gain = error_estimator.estimate_error_gain(accumulated_error, level_errors[i][index[i]], level_errors[i][index[i] + 1], i);
+                heap.push(UnitErrorGain(error_gain / level_sizes[i][index[i]], i));
             }            
 
             bool tolerance_met = false;
@@ -80,23 +78,20 @@ namespace MDR {
         std::vector<uint32_t> interpret_retrieve_size(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<std::vector<double>>& level_errors, double tolerance, std::vector<uint8_t>& index) const {
             int num_levels = level_sizes.size();
             std::vector<uint32_t> retrieve_sizes(num_levels, 0);
-            index.clear();
-            index.resize(num_levels, 0);
-
             double accumulated_error = 0;
             for(int i=0; i<num_levels; i++){
-                accumulated_error += error_estimator.estimate_error(level_errors[i][0], i);
+                accumulated_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
             }
             std::priority_queue<UnitErrorGain, std::vector<UnitErrorGain>, CompareUniteErrorGain> heap;
             // identify minimal level
             double min_error = accumulated_error;
             for(int i=0; i<num_levels; i++){
-                min_error -= error_estimator.estimate_error(level_errors[i][0], i);
-                min_error += error_estimator.estimate_error(level_errors[i][0], i);
+                min_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                min_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
                 // fetch the first component
-                retrieve_sizes[i] += level_sizes[i][0];
-                accumulated_error -= error_estimator.estimate_error(level_errors[i][0], i);
-                accumulated_error += error_estimator.estimate_error(level_errors[i][1], i);
+                retrieve_sizes[i] += level_sizes[i][index[i]];
+                accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
                 index[i] ++;
                 // push the next one
                 if(index[i] != level_sizes[i].size()){

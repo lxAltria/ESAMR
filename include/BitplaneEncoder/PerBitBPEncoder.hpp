@@ -144,11 +144,14 @@ namespace MDR {
         }
 
         T_data * decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t num_bitplanes) const {
-            assert(num_bitplanes > 0);
             const int32_t block_size = PER_BIT_BLOCK_SIZE;
             // define fixed point type
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
             T_data * data = (T_data *) malloc(n * sizeof(T_data));
+            if(num_bitplanes == 0){
+                memset(data, 0, n * sizeof(T_data));
+                return data;
+            }
             std::vector<BitDecoder> decoders;
             for(int i=0; i<streams.size(); i++){
                 decoders.push_back(BitDecoder(reinterpret_cast<uint64_t const*>(streams[i])));
@@ -203,11 +206,14 @@ namespace MDR {
         }
 
         T_data * progressive_decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t starting_bitplane, uint8_t num_bitplanes, int level) {
-            assert(num_bitplanes > 0);
             const int32_t block_size = PER_BIT_BLOCK_SIZE;
             // define fixed point type
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
             T_data * data = (T_data *) malloc(n * sizeof(T_data));
+            if(num_bitplanes == 0){
+                memset(data, 0, n * sizeof(T_data));
+                return data;
+            }
             std::vector<BitDecoder> decoders;
             for(int i=0; i<streams.size(); i++){
                 decoders.push_back(BitDecoder(reinterpret_cast<uint64_t const*>(streams[i])));

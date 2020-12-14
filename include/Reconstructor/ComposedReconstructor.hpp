@@ -42,20 +42,9 @@ namespace MDR {
                 exit(-1);
             }
             auto prev_level_num_bitplanes(level_num_bitplanes);
-            level_num_bitplanes.clear();
             auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
-            // print ratios
-            print_ratio(prev_level_num_bitplanes, retrieve_sizes);
-            for(int i=0; i<retrieve_sizes.size(); i++){
-                retrieve_sizes[i] -= offsets[i];
-            }
             // retrieve data
-            auto concated_level_components = retriever.retrieve_level_components(offsets, retrieve_sizes);
-            interleave_level_components(concated_level_components, prev_level_num_bitplanes);
-            // increment offset for progressive reading
-            for(int i=0; i<offsets.size(); i++){
-                offsets[i] += retrieve_sizes[i];
-            }
+            level_components = retriever.retrieve_level_components(level_sizes, retrieve_sizes, prev_level_num_bitplanes, level_num_bitplanes);
             // check whether to reconstruct to full resolution
             int skipped_level = 0;
             for(int i=0; i<=target_level; i++){
@@ -67,9 +56,7 @@ namespace MDR {
             target_level -= skipped_level;
 
             bool success = reconstruct(target_level, prev_level_num_bitplanes);
-            for(int i=0; i<concated_level_components.size(); i++){
-                free(concated_level_components[i]);
-            }
+            retriever.release();
             if(success) return data.data();
             else{
                 std::cerr << "Reconstruct unsuccessful, return NULL pointer" << std::endl;
@@ -87,8 +74,11 @@ namespace MDR {
                     data[i] += cur_data[i];
                 }                
             }
-            else{
-                std::cerr << "Reconstruct size changes" << std::endl;
+            else if(cur_data.size()){
+                std::cerr << "Reconstruct size changes, not supported yet." << std::endl;
+                std::cerr << "Sizes before reconstruction: " << cur_data.size() << std::endl;
+                std::cerr << "Sizes after reconstruction: " << data.size() << std::endl;
+                exit(0);
             }
             return data.data();
         }
@@ -102,7 +92,6 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_error_bounds);
             deserialize(metadata_pos, num_levels, level_squared_errors);
             deserialize(metadata_pos, num_levels, level_sizes);
-            offsets = std::vector<uint32_t>(num_levels, 0);
             level_num_bitplanes = std::vector<uint8_t>(num_levels, 0);
             free(metadata);
         }
@@ -118,36 +107,6 @@ namespace MDR {
             std::cout << "Retriever: "; retriever.print();
         }
     private:
-
-        void print_ratio(const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint32_t>& retrieve_sizes){
-            uint32_t total_size = 0;
-            for(const auto& size:retrieve_sizes){
-                total_size += size;
-            }
-            uint32_t num_elements = 1;
-            for(const auto& d:dimensions){
-                num_elements *= d;
-            }
-            for(int i=0; i<level_num_bitplanes.size(); i++){
-                std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
-            }
-            std::cout << "Total retrieved size = " << total_size << ", ratio = " << num_elements * 1.0 * sizeof(T) / total_size << std::endl; 
-        }
-
-        bool interleave_level_components(const std::vector<uint8_t*>& concated_level_components, const std::vector<uint8_t>& prev_level_num_bitplanes){
-            level_components.clear();
-            for(int i=0; i<level_num_bitplanes.size(); i++){
-                const uint8_t * pos = concated_level_components[i];
-                std::vector<const uint8_t*> interleaved_level;
-                for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
-                    interleaved_level.push_back(pos);
-                    pos += level_sizes[i][j];
-                }
-                level_components.push_back(interleaved_level);
-            }
-            return true;
-        }
-
         bool reconstruct(uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, bool progressive=true){
             auto level_dims = compute_level_dims(dimensions, target_level);
             auto reconstruct_dimensions = level_dims[target_level];
@@ -181,7 +140,6 @@ namespace MDR {
         SizeInterpreter interpreter;
         Retriever retriever;
         Compressor compressor;
-        std::vector<uint32_t> offsets;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
