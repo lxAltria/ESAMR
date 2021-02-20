@@ -88,17 +88,19 @@ namespace MDR {
             for(int i=0; i<num_levels; i++){
                 min_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
                 min_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
-                // fetch the first component
-                retrieve_sizes[i] += level_sizes[i][index[i]];
-                accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
-                accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
-                index[i] ++;
+                // fetch the first component if index is 0
+                if(index[i] == 0){
+                    retrieve_sizes[i] += level_sizes[i][index[i]];
+                    accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                    accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
+                    index[i] ++;
+                    std::cout << i;
+                }
                 // push the next one
                 if(index[i] != level_sizes[i].size()){
                     double error_gain = error_estimator.estimate_error_gain(accumulated_error, level_errors[i][index[i]], level_errors[i][index[i] + 1], i);
                     heap.push(UnitErrorGain(error_gain / level_sizes[i][index[i]], i));
                 }
-                std::cout << i;
                 if(min_error < tolerance){
                     // the min error of first 0~i levels meets the tolerance
                     num_levels = i + 1;
@@ -106,7 +108,7 @@ namespace MDR {
                 }
             }
 
-            bool tolerance_met = false;
+            bool tolerance_met = accumulated_error < tolerance;
             while((!tolerance_met) && (!heap.empty())){
                 auto unit_error_gain = heap.top();
                 heap.pop();

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <vector>
 #include <cmath>
+#include <ctime>
 
 namespace MDR {
 
@@ -140,6 +141,22 @@ namespace MDR {
         }
         std::cout << std::endl;
     }
+
+    class Timer{
+    public:
+        void start(){
+            err = clock_gettime(CLOCK_REALTIME, &start_time);
+        }
+        void end(){
+            err = clock_gettime(CLOCK_REALTIME, &end_time);
+        }
+        void print(std::string s){
+            std::cout << s << " time: " << (double)(end_time.tv_sec - start_time.tv_sec) + (double)(end_time.tv_nsec - start_time.tv_nsec)/(double)1000000000 << "s" << std::endl;
+        }
+    private:
+        int err = 0;
+        struct timespec start_time, end_time;
+    };
 
 }
 #endif

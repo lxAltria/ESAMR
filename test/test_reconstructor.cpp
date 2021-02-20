@@ -71,7 +71,8 @@ int main(int argc, char ** argv){
     using T_stream = uint32_t;
     auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
-    auto interleaver = MDR::DirectInterleaver<T>();
+    // auto interleaver = MDR::DirectInterleaver<T>();
+    auto interleaver = MDR::SFCInterleaver<T>();
     auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto compressor = MDR::DefaultLevelCompressor();
@@ -81,6 +82,8 @@ int main(int argc, char ** argv){
         case 1:{
             auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, s);
             auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
+            // auto estimator = MDR::L2ErrorEstimator_HB<T>(num_dims, num_levels - 1);
+            // auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::L2ErrorEstimator_HB<T>>(estimator);
             test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);            
             break;
         }
