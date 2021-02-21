@@ -53,7 +53,7 @@ namespace MDR {
             // timer.end();
             // timer.print("Interpret and retrieval");
 
-            bool success = reconstruct(target_level, prev_level_num_bitplanes);
+            bool success = reconstruct(data.data(), target_level, prev_level_num_bitplanes);
             retriever.release();
             if(success) return data.data();
             else{
@@ -64,19 +64,43 @@ namespace MDR {
 
         // reconstruct progressively based on available data
         T * progressive_reconstruct(uint8_t const * retrieved_data, uint32_t retrieved_size){
-            std::vector<T> cur_data(data);
-            reconstruct(retrieved_data, retrieved_size);
+            // reconstruct(retrieved_data, retrieved_size);
+            uint8_t target_level = level_error_bounds.size() - 1;
+            auto prev_level_num_bitplanes(level_num_bitplanes);
+            level_components.clear();
+            for(int i=0; i<=target_level; i++){
+                level_components.push_back(std::vector<const uint8_t *>());
+            }
+            uint8_t const * retrieved_data_pos = retrieved_data;
+            while(retrieved_data_pos - retrieved_data < retrieved_size){
+                int level = order[bitplane_count ++];
+                level_components[level].push_back(retrieved_data_pos);
+                retrieved_data_pos += level_sizes[level][level_num_bitplanes[level]];
+                level_num_bitplanes[level] ++;
+            }
             // TODO: add resolution changes
-            if(cur_data.size() == data.size()){
+            if(data.size() == 0){
+                uint32_t num_elements = 1;
+                for(const auto& dim:dimensions){
+                    num_elements *= dim;
+                }
+                data = std::vector<T>(num_elements);
+                reconstruct(data.data(), target_level, prev_level_num_bitplanes);
+            }
+            else{
+                Timer timer;
+                timer.start();
+                T * cur_data = (T *) malloc(sizeof(T) * data.size());
+                reconstruct(cur_data, target_level, prev_level_num_bitplanes);
+                timer.end();
+                timer.print("Whole reconstruction time");
+                timer.start();
                 for(int i=0; i<data.size(); i++){
                     data[i] += cur_data[i];
                 }                
-            }
-            else if(cur_data.size()){
-                std::cerr << "Reconstruct size changes, not supported yet." << std::endl;
-                std::cerr << "Sizes before reconstruction: " << cur_data.size() << std::endl;
-                std::cerr << "Sizes after reconstruction: " << data.size() << std::endl;
-                exit(0);
+                timer.end();
+                timer.print("Add difference time");
+                free(cur_data);
             }
             return data.data();
         }
@@ -108,46 +132,43 @@ namespace MDR {
             std::cout << "Retriever: "; retriever.print();
         }
     private:
-        bool reconstruct(uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, bool progressive=true){
-            // Timer timer;
+        bool reconstruct(T * cur_data, uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, bool progressive=true){
+            Timer timer;
             // timer.start();
             auto level_dims = compute_level_dims(dimensions, target_level);
             auto reconstruct_dimensions = level_dims[target_level];
-            uint32_t num_elements = 1;
-            for(const auto& dim:reconstruct_dimensions){
-                num_elements *= dim;
-            }
-            data.clear();
-            data = std::vector<T>(num_elements, 0);
             // timer.end();
             // timer.print("Reconstruct Preprocessing");            
-
             auto level_elements = compute_level_elements(level_dims, target_level);
             std::vector<uint32_t> dims_dummy(reconstruct_dimensions.size(), 0);
+            Timer timer2;
+            timer2.start();
             for(int i=0; i<=target_level; i++){
-                // timer.start();
+                timer.start();
                 compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i]);
-                // timer.end();
-                // timer.print("Lossless");            
-                // timer.start();
+                timer.end();
+                timer.print("Lossless");            
+                timer.start();
                 int level_exp = 0;
                 frexp(level_error_bounds[i], &level_exp);
                 auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                 compressor.decompress_release();
-                // timer.end();
-                // timer.print("Decoding");            
+                timer.end();
+                timer.print("Decoding");            
 
-                // timer.start();
+                timer.start();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
-                interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data());
+                interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, cur_data);
                 free(level_decoded_data);
-                // timer.end();
-                // timer.print("Reposition");            
+                timer.end();
+                timer.print("Reposition");            
             }
-            // timer.start();
-            decomposer.recompose(data.data(), reconstruct_dimensions, target_level);
-            // timer.end();
-            // timer.print("Recomposing");            
+            timer2.end();
+            timer2.print("Coefficient reconstruction");            
+            timer.start();
+            decomposer.recompose(cur_data, reconstruct_dimensions, target_level);
+            timer.end();
+            timer.print("Recomposing");            
             return true;
         }
 
