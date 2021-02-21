@@ -19,6 +19,21 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
     refactor.refactor(data.data(), dims, target_level, num_bitplanes);
     err = clock_gettime(CLOCK_REALTIME, &end);
     cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+
+    uint32_t data_size = 0;
+    vector<int> positions;
+    uint8_t * refactored_data = refactor.get_data(positions, data_size);
+    for(int i=0; i<positions.size(); i++){
+        cout << positions[i] << " ";
+    }
+    cout << endl;
+    cout << "data_size = " << data_size << endl;
+    uint32_t metadata_size = 0;
+    uint8_t * metadata = refactor.write_metadata(metadata_size);
+    cout << "metadata_size = " << metadata_size << endl;
+    free(refactored_data);
+    free(metadata);
+
 }
 
 template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorCollector, class Writer>
@@ -49,8 +64,8 @@ int main(int argc, char ** argv){
     }
     using T = float;
     using T_stream = uint32_t;
-    auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
-    // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
+    // auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
+    auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     // auto interleaver = MDR::DirectInterleaver<T>();
     auto interleaver = MDR::SFCInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
@@ -58,8 +73,8 @@ int main(int argc, char ** argv){
     auto compressor = MDR::DefaultLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
+    // auto collector = MDR::MaxErrorCollector<T>();
     auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
-
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);
     return 0;
 }

@@ -13,7 +13,9 @@ namespace MDR {
 
             virtual void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes) = 0;
 
-            virtual void write_metadata() const = 0;
+            virtual uint8_t * write_metadata(uint32_t& size) const = 0;
+
+            virtual uint8_t * get_data(std::vector<int>& positions, uint32_t& size) = 0;
 
             virtual void print() const = 0;
         };

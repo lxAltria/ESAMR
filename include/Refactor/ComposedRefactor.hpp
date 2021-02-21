@@ -6,7 +6,9 @@
 #include "Interleaver/Interleaver.hpp"
 #include "BitplaneEncoder/BitplaneEncoder.hpp"
 #include "ErrorCollector/ErrorCollector.hpp"
+#include "ErrorEstimator/ErrorEstimator.hpp"
 #include "LosslessCompressor/LevelCompressor.hpp"
+#include "SizeInterpreter/SizeInterpreter.hpp"
 #include "Writer/Writer.hpp"
 #include "RefactorUtils.hpp"
 
@@ -27,17 +29,19 @@ namespace MDR {
             data = std::vector<T>(data_, data_ + num_elements);
             // if refactor successfully
             if(refactor(target_level, num_bitplanes)){
-                writer.write_level_components(level_components, level_sizes);
+                // writer.write_level_components(level_components, level_sizes);
             }
-            write_metadata();
-            for(int i=0; i<level_components.size(); i++){
-                for(int j=0; j<level_components[i].size(); j++){
-                    free(level_components[i][j]);                    
-                }
+            {
+                level_abs_errors.clear();
+                MaxErrorCollector<T> collector = MaxErrorCollector<T>();
+                for(int i=0; i<=target_level; i++){
+                    auto collected_error = collector.collect_level_error(NULL, 0, level_squared_errors[i].size(), level_error_bounds[i]);
+                    level_abs_errors.push_back(collected_error);
+                }                
             }
         }
 
-        void write_metadata() const {
+        uint8_t * write_metadata(uint32_t& size) const {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
                             + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
@@ -48,11 +52,23 @@ namespace MDR {
             serialize(level_error_bounds, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
-            writer.write_metadata(metadata, metadata_size);
-            free(metadata);
+            // writer.write_metadata(metadata, metadata_size);
+            size = metadata_size;
+            return metadata;
         }
 
-        ~ComposedRefactor(){}
+        uint8_t * get_data(std::vector<int>& positions, uint32_t& size) {
+            uint8_t * reordered_data = reorganize(positions, size);
+            return reordered_data;
+        }
+
+        ~ComposedRefactor(){
+            for(int i=0; i<level_components.size(); i++){
+                for(int j=0; j<level_components[i].size(); j++){
+                    free(level_components[i][j]);                    
+                }
+            }            
+        }
 
         void print() const {
             std::cout << "Composed refactor with the following components." << std::endl;
@@ -61,6 +77,63 @@ namespace MDR {
             std::cout << "Encoder: "; encoder.print();
         }
     private:
+        uint8_t * reorganize(std::vector<int>& positions, uint32_t& total_size){
+            positions.clear();
+            std::vector<double> eb{0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0};
+            int eb_index = 0;
+            auto error_estimator = MDR::MaxErrorEstimatorHB<T>();
+            const int num_levels = level_sizes.size();
+            total_size = 0;
+            for(int i=0; i<num_levels; i++){
+                for(int j=0; j<level_sizes[i].size(); j++){
+                    total_size += level_sizes[i][j];
+                }
+            }
+            const std::vector<std::vector<double>>& level_errors = level_abs_errors;
+            uint8_t * reorganized_data = (uint8_t *) malloc(total_size);
+            uint8_t * reorganized_data_pos = reorganized_data;
+            std::vector<int> index(level_sizes.size(), 0);
+            double accumulated_error = 0;
+            std::priority_queue<UnitErrorGain, std::vector<UnitErrorGain>, CompareUniteErrorGain> heap;
+            for(int i=0; i<num_levels; i++){
+                memcpy(reorganized_data_pos, level_components[i][0], level_sizes[i][0]);
+                reorganized_data_pos += level_sizes[i][0];
+                index[i] ++;
+                accumulated_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
+                if(accumulated_error < eb[eb_index]){
+                    positions.push_back(reorganized_data_pos - reorganized_data);
+                    eb_index ++;
+                }
+                std::cout << i;
+                // push the next one
+                if(index[i] != level_sizes[i].size()){
+                    double error_gain = error_estimator.estimate_error_gain(0, level_errors[i][index[i]], level_errors[i][index[i] + 1], i);
+                    heap.push(UnitErrorGain(error_gain / level_sizes[i][index[i]], i));
+                }
+            }
+            while(!heap.empty()){
+                auto unit_error_gain = heap.top();
+                heap.pop();
+                int i = unit_error_gain.level;
+                int j = index[i];
+                memcpy(reorganized_data_pos, level_components[i][j], level_sizes[i][j]);
+                reorganized_data_pos += level_sizes[i][j];
+                index[i] ++;
+                accumulated_error -= error_estimator.estimate_error(level_errors[i][j], i);
+                accumulated_error += error_estimator.estimate_error(level_errors[i][j+1], i);
+                if(accumulated_error < eb[eb_index]){
+                    positions.push_back(reorganized_data_pos - reorganized_data);
+                    eb_index ++;
+                }
+                if(index[i] != level_sizes[i].size()){
+                    double error_gain = error_estimator.estimate_error_gain(0, level_errors[i][index[i]], level_errors[i][index[i] + 1], i);
+                    heap.push(UnitErrorGain(error_gain / level_sizes[i][index[i]], i));
+                }
+                std::cout << i;
+            }
+            std::cout << std::endl;
+            return reorganized_data;
+        }
         bool refactor(uint8_t target_level, uint8_t num_bitplanes){
             uint8_t max_level = log2(*min_element(dimensions.begin(), dimensions.end())) - 1;
             if(target_level > max_level){
@@ -114,9 +187,11 @@ namespace MDR {
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
+        std::vector<int> order;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<std::vector<double>> level_squared_errors;
+        std::vector<std::vector<double>> level_abs_errors;
     };
 }
 #endif
