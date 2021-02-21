@@ -57,8 +57,8 @@ namespace MDR {
             return metadata;
         }
 
-        uint8_t * get_data(std::vector<int>& positions, uint32_t& size) {
-            uint8_t * reordered_data = reorganize(positions, size);
+        uint8_t * get_data(T value_range, std::vector<int>& positions, uint32_t& size) {
+            uint8_t * reordered_data = reorganize(value_range, positions, size);
             return reordered_data;
         }
 
@@ -77,9 +77,12 @@ namespace MDR {
             std::cout << "Encoder: "; encoder.print();
         }
     private:
-        uint8_t * reorganize(std::vector<int>& positions, uint32_t& total_size){
+        uint8_t * reorganize(T value_range, std::vector<int>& positions, uint32_t& total_size){
             positions.clear();
             std::vector<double> eb{0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0};
+            for(int i=0; i<eb.size(); i++){
+                eb[i] *= value_range;
+            }
             int eb_index = 0;
             auto error_estimator = MDR::MaxErrorEstimatorHB<T>();
             const int num_levels = level_sizes.size();

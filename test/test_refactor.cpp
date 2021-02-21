@@ -12,6 +12,13 @@ using namespace std;
 
 template <class T, class Refactor>
 void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Refactor refactor){
+    T max_v = data[0];
+    T min_v = data[0];
+    for(int i=1; i<data.size(); i++){
+        if(data[i] < min_v) min_v = data[i];
+        if(data[i] > max_v) max_v = data[i];
+    }
+    T value_range = max_v - min_v;
     struct timespec start, end;
     int err = 0;
     cout << "Start refactoring" << endl;
@@ -22,7 +29,7 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
 
     uint32_t data_size = 0;
     vector<int> positions;
-    uint8_t * refactored_data = refactor.get_data(positions, data_size);
+    uint8_t * refactored_data = refactor.get_data(value_range, positions, data_size);
     for(int i=0; i<positions.size(); i++){
         cout << positions[i] << " ";
     }
