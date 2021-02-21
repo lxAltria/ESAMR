@@ -15,7 +15,7 @@ namespace MDR {
 
             virtual uint8_t * write_metadata(uint32_t& size) const = 0;
 
-            virtual uint8_t * get_data(T value_range, std::vector<int>& positions, uint32_t& size) = 0;
+            virtual uint8_t * get_data(const std::vector<double>& eb, std::vector<int>& positions) = 0;
 
             virtual void print() const = 0;
         };

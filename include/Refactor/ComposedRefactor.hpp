@@ -43,7 +43,8 @@ namespace MDR {
 
         uint8_t * write_metadata(uint32_t& size) const {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
-                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes); // level information
+                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes)// level information
+                            + sizeof(uint8_t) + get_size(order);
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
             *(metadata_pos ++) = (uint8_t) dimensions.size();
@@ -52,14 +53,17 @@ namespace MDR {
             serialize(level_error_bounds, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
+            *(metadata_pos ++) = (uint8_t) order.size();
+            serialize(order, metadata_pos);
+            std::cout << order.size() << "!\n";
             // writer.write_metadata(metadata, metadata_size);
             size = metadata_size;
             return metadata;
         }
 
-        uint8_t * get_data(T value_range, std::vector<int>& positions, uint32_t& size) {
-            uint8_t * reordered_data = reorganize(value_range, positions, size);
-            return reordered_data;
+        uint8_t * get_data(const std::vector<double>& eb, std::vector<int>& positions) {
+            uint8_t * reorganized_data = reorganize(eb, positions);
+            return reorganized_data;
         }
 
         ~ComposedRefactor(){
@@ -77,16 +81,12 @@ namespace MDR {
             std::cout << "Encoder: "; encoder.print();
         }
     private:
-        uint8_t * reorganize(T value_range, std::vector<int>& positions, uint32_t& total_size){
+        uint8_t * reorganize(const std::vector<double>& eb, std::vector<int>& positions){
             positions.clear();
-            std::vector<double> eb{0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0};
-            for(int i=0; i<eb.size(); i++){
-                eb[i] *= value_range;
-            }
             int eb_index = 0;
             auto error_estimator = MDR::MaxErrorEstimatorHB<T>();
             const int num_levels = level_sizes.size();
-            total_size = 0;
+            uint32_t total_size = 0;
             for(int i=0; i<num_levels; i++){
                 for(int j=0; j<level_sizes[i].size(); j++){
                     total_size += level_sizes[i][j];
@@ -98,9 +98,11 @@ namespace MDR {
             std::vector<int> index(level_sizes.size(), 0);
             double accumulated_error = 0;
             std::priority_queue<UnitErrorGain, std::vector<UnitErrorGain>, CompareUniteErrorGain> heap;
+            positions.push_back(reorganized_data_pos - reorganized_data);
             for(int i=0; i<num_levels; i++){
                 memcpy(reorganized_data_pos, level_components[i][0], level_sizes[i][0]);
                 reorganized_data_pos += level_sizes[i][0];
+                order.push_back(i);
                 index[i] ++;
                 accumulated_error += error_estimator.estimate_error(level_errors[i][index[i]], i);
                 if(accumulated_error < eb[eb_index]){
@@ -121,6 +123,7 @@ namespace MDR {
                 int j = index[i];
                 memcpy(reorganized_data_pos, level_components[i][j], level_sizes[i][j]);
                 reorganized_data_pos += level_sizes[i][j];
+                order.push_back(i);
                 index[i] ++;
                 accumulated_error -= error_estimator.estimate_error(level_errors[i][j], i);
                 accumulated_error += error_estimator.estimate_error(level_errors[i][j+1], i);
@@ -135,6 +138,7 @@ namespace MDR {
                 std::cout << i;
             }
             std::cout << std::endl;
+            positions.push_back(reorganized_data_pos - reorganized_data);
             return reorganized_data;
         }
         bool refactor(uint8_t target_level, uint8_t num_bitplanes){

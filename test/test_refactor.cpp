@@ -7,8 +7,20 @@
 #include <bitset>
 #include "utils.hpp"
 #include "Refactor/Refactor.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 using namespace std;
+
+template <class T>
+void posix_write(std::string filename, T * data, size_t num_elements){
+  int fd = open(filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  write(fd, data, num_elements * sizeof(T));
+  fsync(fd);
+  close(fd);
+}
 
 template <class T, class Refactor>
 void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Refactor refactor){
@@ -19,6 +31,10 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
         if(data[i] > max_v) max_v = data[i];
     }
     T value_range = max_v - min_v;
+    std::vector<double> eb{0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0};
+    for(int i=0; i<eb.size(); i++){
+        eb[i] *= value_range;
+    }
     struct timespec start, end;
     int err = 0;
     cout << "Start refactoring" << endl;
@@ -27,17 +43,23 @@ void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_le
     err = clock_gettime(CLOCK_REALTIME, &end);
     cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
 
-    uint32_t data_size = 0;
     vector<int> positions;
-    uint8_t * refactored_data = refactor.get_data(value_range, positions, data_size);
+    uint8_t * refactored_data = refactor.get_data(eb, positions);
     for(int i=0; i<positions.size(); i++){
         cout << positions[i] << " ";
     }
     cout << endl;
-    cout << "data_size = " << data_size << endl;
     uint32_t metadata_size = 0;
     uint8_t * metadata = refactor.write_metadata(metadata_size);
     cout << "metadata_size = " << metadata_size << endl;
+    posix_write("refactored_data/metadata.bin", metadata, metadata_size);
+    uint8_t * refactored_data_pos = refactored_data;
+    for(int i=0; i<positions.size() - 1; i++){
+        string filename = "refactored_data/fragment_" + to_string(i) + ".bin";
+        int fragment_size = positions[i+1] - positions[i];
+        posix_write(filename, refactored_data_pos, fragment_size);
+        refactored_data_pos += fragment_size;
+    }
     free(refactored_data);
     free(metadata);
 
@@ -73,10 +95,10 @@ int main(int argc, char ** argv){
     using T_stream = uint32_t;
     // auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
     auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
-    // auto interleaver = MDR::DirectInterleaver<T>();
-    auto interleaver = MDR::SFCInterleaver<T>();
-    // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    auto interleaver = MDR::DirectInterleaver<T>();
+    // auto interleaver = MDR::SFCInterleaver<T>();
+    auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     auto compressor = MDR::DefaultLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
