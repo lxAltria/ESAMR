@@ -61,11 +61,14 @@ void test(string filename){
     int level_exp = 0;
     frexp(max_val, &level_exp);
 
-    evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint8_t>());
-    evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint16_t>());
+    // evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint8_t>());
+    // evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint16_t>());
     evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint32_t>());
     evaluate(data, num_elements, level_exp, 32, MDR::GroupedBPEncoder<T, uint64_t>());
+    evaluate(data, num_elements, level_exp, 32, MDR::PerBitBPEncoder<T, uint32_t>());
     evaluate(data, num_elements, level_exp, 32, MDR::PerBitBPEncoder<T, uint64_t>());
+    evaluate(data, num_elements, level_exp, 32, MDR::NegaBinaryBPEncoder<T, uint32_t>());
+    evaluate(data, num_elements, level_exp, 32, MDR::NegaBinaryBPEncoder<T, uint64_t>());
 }
 
 int main(int argc, char ** argv){

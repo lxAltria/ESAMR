@@ -104,6 +104,10 @@ namespace MDR {
             free(metadata);
         }
 
+        const std::vector<uint32_t>& get_dimensions(){
+            return dimensions;
+        }
+
         ~ComposedReconstructor(){}
 
         void print() const {

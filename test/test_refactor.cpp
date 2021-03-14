@@ -49,11 +49,12 @@ int main(int argc, char ** argv){
     }
     using T = float;
     using T_stream = uint32_t;
-    // auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
-    auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
+    auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
+    // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
     // auto interleaver = MDR::SFCInterleaver<T>();
     auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    // auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     auto compressor = MDR::DefaultLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
