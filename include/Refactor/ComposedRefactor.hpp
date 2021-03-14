@@ -39,7 +39,8 @@ namespace MDR {
 
         void write_metadata() const {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
-                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes); // level information
+                            + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes) // level information
+                            + get_size(stopping_indices);
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
             *(metadata_pos ++) = (uint8_t) dimensions.size();
@@ -48,6 +49,7 @@ namespace MDR {
             serialize(level_error_bounds, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
             serialize(level_sizes, metadata_pos);
+            serialize(stopping_indices, metadata_pos);
             writer.write_metadata(metadata, metadata_size);
             free(metadata);
         }
@@ -97,7 +99,8 @@ namespace MDR {
                 auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes);
                 free(buffer);
                 // lossless compression
-                compressor.compress_level(streams, stream_sizes);
+                uint8_t stopping_index = compressor.compress_level(streams, stream_sizes);
+                stopping_indices.push_back(stopping_index);
                 // record encoded level data and size
                 level_components.push_back(streams);
                 level_sizes.push_back(stream_sizes);
@@ -114,6 +117,7 @@ namespace MDR {
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
+        std::vector<uint8_t> stopping_indices;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<std::vector<double>> level_squared_errors;

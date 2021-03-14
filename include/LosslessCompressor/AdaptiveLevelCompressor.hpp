@@ -11,21 +11,23 @@ namespace MDR {
     class AdaptiveLevelCompressor : public concepts::LevelCompressorInterface {
     public:
         AdaptiveLevelCompressor(){}
-        void compress_level(std::vector<uint8_t*>& streams, std::vector<uint32_t>& stream_sizes) const {
-            int stopping_index = 0;
+        uint8_t compress_level(std::vector<uint8_t*>& streams, std::vector<uint32_t>& stream_sizes) const {
+            int stopping_index = stream_sizes.size();
             for(int i=0; i<streams.size(); i++){
                 uint8_t * compressed = NULL;
                 auto compressed_size = ZSTD::compress(streams[i], stream_sizes[i], &compressed);
                 free(streams[i]);
+                // std::cout << compressed_size << " " << stream_sizes[i] << " " << stream_sizes[i] * 1.0 / compressed_size << std::endl;
                 // skip the first
-                if(i && (compressed_size / stream_sizes[i] < CR_THRESHOLD)){
+                float ratio = stream_sizes[i] * 1.0 / compressed_size;
+                streams[i] = compressed;
+                stream_sizes[i] = compressed_size;
+                if(i && (ratio < CR_THRESHOLD)){
                     stopping_index = i;
                     break;
                 }
-                streams[i] = compressed;
-                stream_sizes[i] = compressed_size;
             }
-            int latter_start_index = (stopping_index < LATTER_INDEX) ? LATTER_INDEX : stopping_index;
+            int latter_start_index = (stopping_index < LATTER_INDEX) ? LATTER_INDEX : stopping_index + 1;
             for(int i=latter_start_index; i<streams.size(); i++){
                 uint8_t * compressed = NULL;
                 auto compressed_size = ZSTD::compress(streams[i], stream_sizes[i], &compressed);
@@ -33,10 +35,9 @@ namespace MDR {
                 streams[i] = compressed;
                 stream_sizes[i] = compressed_size;
             }
-            std::cout << "stopping_index = " << stopping_index << std::endl;
+            return stopping_index;
         }
-        void decompress_level(std::vector<const uint8_t*>& streams, const std::vector<uint32_t>& stream_sizes, uint8_t starting_bitplane, uint8_t num_bitplanes) {
-            int stopping_index = 10;
+        void decompress_level(std::vector<const uint8_t*>& streams, const std::vector<uint32_t>& stream_sizes, uint8_t starting_bitplane, uint8_t num_bitplanes, uint8_t stopping_index) {
             for(int i=0; i<num_bitplanes; i++){
                 int bitplane_index = starting_bitplane + i;
                 if((bitplane_index <= stopping_index) || (bitplane_index >= LATTER_INDEX)){
@@ -49,19 +50,18 @@ namespace MDR {
         }
         void decompress_release(){
             for(int i=0; i<buffer.size(); i++){
-                free(buffer[i]);
+                if(buffer[i]) free(buffer[i]);
             }
             buffer.clear();
         }
         void print() const {
-            std::cout << "Default Level lossless compressor" << std::endl;
+            std::cout << "Adaptive level lossless compressor" << std::endl;
         }
         ~AdaptiveLevelCompressor(){
             decompress_release();
         }
     private:
         std::vector<uint8_t*> buffer;
-        std::vector<uint8_t> stopping_indices;
     };
 }
 #endif

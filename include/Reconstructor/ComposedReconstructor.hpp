@@ -100,6 +100,7 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_error_bounds);
             deserialize(metadata_pos, num_levels, level_squared_errors);
             deserialize(metadata_pos, num_levels, level_sizes);
+            deserialize(metadata_pos, num_levels, stopping_indices);
             level_num_bitplanes = std::vector<uint8_t>(num_levels, 0);
             free(metadata);
         }
@@ -137,7 +138,7 @@ namespace MDR {
             std::vector<uint32_t> dims_dummy(reconstruct_dimensions.size(), 0);
             for(int i=0; i<=target_level; i++){
                 timer.start();
-                compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i]);
+                compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], stopping_indices[i]);
                 timer.end();
                 timer.print("Lossless");            
                 timer.start();
@@ -172,6 +173,7 @@ namespace MDR {
         std::vector<uint32_t> dimensions;
         std::vector<T> level_error_bounds;
         std::vector<uint8_t> level_num_bitplanes;
+        std::vector<uint8_t> stopping_indices;
         std::vector<std::vector<const uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<std::vector<double>> level_squared_errors;
