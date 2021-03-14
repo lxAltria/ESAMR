@@ -14,9 +14,9 @@ namespace MDR {
         L2ErrorEstimator_HB(int num_dims, int target_level){
             s_table = std::vector<T>(target_level + 1);
             for(int i=0; i<=target_level; i++){
-                // vol(P_l) where vol(P_l) = 2^(dl)
-                int l = target_level - i;
-                s_table[i] = pow(2, num_dims*l);
+                // vol(P_l) where vol(P_l) = 2^(d(L-l))
+                int l = i;
+                s_table[i] = pow(2, num_dims*(target_level - l));
             }
         }
         L2ErrorEstimator_HB() : L2ErrorEstimator_HB(1, 0) {}
@@ -44,9 +44,9 @@ namespace MDR {
         SNormErrorEstimator(int num_dims, int target_level, T s) : s(s) {
             s_table = std::vector<T>(target_level + 1);
             for(int i=0; i<=target_level; i++){
-                // 2^(sl) * vol(P_l) where vol(P_l) = 2^(dl)
-                int l = target_level - i;
-                s_table[i] = pow(2, 2*s*l + num_dims*l);
+                // 2^(sl) * vol(P_l) where vol(P_l) = 2^(d(L-l))
+                int l = i;
+                s_table[i] = pow(2, 2*s*l + num_dims*(target_level - l));
             }
         }
         SNormErrorEstimator() : SNormErrorEstimator(1, 0, 0) {}
