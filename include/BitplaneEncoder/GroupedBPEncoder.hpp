@@ -76,7 +76,7 @@ namespace MDR {
             return streams;
         }
 
-        T_data * decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t num_bitplanes) const {
+        T_data * decode(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t num_bitplanes) {
             uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
             // define fixed point type
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
@@ -255,7 +255,7 @@ namespace MDR {
         }
 
         template <class T_int>
-        uint8_t encode_block(T_int const * data, size_t n, uint8_t num_bitplanes, T_stream sign, std::vector<T_stream *>& streams_pos) const {
+        inline uint8_t encode_block(T_int const * data, size_t n, uint8_t num_bitplanes, T_stream sign, std::vector<T_stream *>& streams_pos) const {
             bool recorded = false;
             uint8_t recording_bitplane = num_bitplanes;
             for(int k=num_bitplanes - 1; k>=0; k--){
@@ -277,7 +277,7 @@ namespace MDR {
         }
 
         template <class T_int>
-        void decode_block(std::vector<T_stream const *>& streams_pos, size_t n, uint8_t recording_bitplane, uint8_t num_bitplanes, T_int * data) const {
+        inline void decode_block(std::vector<T_stream const *>& streams_pos, size_t n, uint8_t recording_bitplane, uint8_t num_bitplanes, T_int * data) const {
             for(int k=num_bitplanes - 1; k>=0; k--){
                 T_stream bitplane_index = recording_bitplane + num_bitplanes - 1 - k;
                 T_stream bitplane_value = *(streams_pos[bitplane_index] ++);
