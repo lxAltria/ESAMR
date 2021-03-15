@@ -18,7 +18,7 @@ namespace MDR {
         std::vector<uint8_t *> encode(T_data const * data, int32_t n, int32_t exp, uint8_t num_bitplanes, std::vector<uint32_t>& stream_sizes) const {
             assert(num_bitplanes > 0);
             // leave room for negabinary format
-            exp += 1;
+            exp += 2;
             // determine block size based on bitplane integer type
             uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
             std::vector<uint8_t> starting_bitplanes = std::vector<uint8_t>((n - 1)/block_size + 1, 0);
@@ -74,7 +74,7 @@ namespace MDR {
                 return data;
             }
             // leave room for negabinary format
-            exp += 1;
+            exp += 2;
             // define fixed point type
             using T_fps = typename std::conditional<std::is_same<T_data, double>::value, int64_t, int32_t>::type;
             using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
@@ -86,28 +86,50 @@ namespace MDR {
             // decode
             const uint8_t ending_bitplane = starting_bitplane + num_bitplanes;
             T_data * data_pos = data;
-            for(int i=0; i<n - block_size; i+=block_size){
-                memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
-                decode_block(streams_pos, block_size, num_bitplanes, int_data_buffer.data());
-                for(int j=0; j<block_size; j++){
-                    *(data_pos++) = ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+            // std::cout << "ending_bitplane = " << +ending_bitplane << std::endl;
+            if(ending_bitplane % 2 == 0){
+                for(int i=0; i<n - block_size; i+=block_size){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    decode_block(streams_pos, block_size, num_bitplanes, int_data_buffer.data());
+                    for(int j=0; j<block_size; j++){
+                        *(data_pos++) = ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+                    }
                 }
+                // leftover
+                {
+                    int rest_size = n % block_size;
+                    if(rest_size == 0) rest_size = block_size;
+                    memset(int_data_buffer.data(), 0, rest_size * sizeof(T_fp));
+                    decode_block(streams_pos, rest_size, num_bitplanes, int_data_buffer.data());
+                    for(int j=0; j<rest_size; j++){
+                        *(data_pos++) = ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+                    }
+                }                
             }
-            // leftover
-            {
-                int rest_size = n % block_size;
-                if(rest_size == 0) rest_size = block_size;
-                memset(int_data_buffer.data(), 0, rest_size * sizeof(T_fp));
-                decode_block(streams_pos, rest_size, num_bitplanes, int_data_buffer.data());
-                for(int j=0; j<rest_size; j++){
-                    *(data_pos++) = ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+            else{
+                for(int i=0; i<n - block_size; i+=block_size){
+                    memset(int_data_buffer.data(), 0, block_size * sizeof(T_fp));
+                    decode_block(streams_pos, block_size, num_bitplanes, int_data_buffer.data());
+                    for(int j=0; j<block_size; j++){
+                        *(data_pos++) = - ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+                    }
                 }
+                // leftover
+                {
+                    int rest_size = n % block_size;
+                    if(rest_size == 0) rest_size = block_size;
+                    memset(int_data_buffer.data(), 0, rest_size * sizeof(T_fp));
+                    decode_block(streams_pos, rest_size, num_bitplanes, int_data_buffer.data());
+                    for(int j=0; j<rest_size; j++){
+                        *(data_pos++) = - ldexp((T_data) negabinary2binary(int_data_buffer[j]), - ending_bitplane + exp);
+                    }
+                }                
             }
             return data;
         }
 
         void print() const {
-            std::cout << "Grouped bitplane encoder" << std::endl;
+            std::cout << "NegaBinary bitplane encoder" << std::endl;
         }
     private:
         template<class T>

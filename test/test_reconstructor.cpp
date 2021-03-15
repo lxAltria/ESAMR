@@ -86,7 +86,7 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         compare(a1, a2);
         auto a22 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 5);
         cout << "Average2: ";
-        compare(a1, a2);
+        compare(a12, a22);
     }
 }
 
@@ -137,9 +137,11 @@ int main(int argc, char ** argv){
     // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
     // auto interleaver = MDR::SFCInterleaver<T>();
+    // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
+    auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto compressor = MDR::DefaultLevelCompressor();
+    // auto compressor = MDR::AdaptiveLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
     switch(error_mode){
