@@ -56,8 +56,8 @@ int main(int argc, char ** argv){
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    auto compressor = MDR::DefaultLevelCompressor();
-    // auto compressor = MDR::AdaptiveLevelCompressor();
+    // auto compressor = MDR::DefaultLevelCompressor();
+    auto compressor = MDR::AdaptiveLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
     auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);

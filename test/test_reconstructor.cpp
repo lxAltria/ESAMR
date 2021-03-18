@@ -71,8 +71,8 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
     struct timespec start, end;
     int err = 0;
     auto dims = reconstructor.get_dimensions();
-    auto a1 = compute_average(data.data(), dims[0], dims[1], dims[2], 3);
-    auto a12 = compute_average(data.data(), dims[0], dims[1], dims[2], 5);
+    // auto a1 = compute_average(data.data(), dims[0], dims[1], dims[2], 3);
+    // auto a12 = compute_average(data.data(), dims[0], dims[1], dims[2], 5);
     for(int i=0; i<tolerance.size(); i++){
         cout << "Start reconstruction" << endl;
         err = clock_gettime(CLOCK_REALTIME, &start);
@@ -81,12 +81,12 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         // TODO: add full resolution check
         MGARD::print_statistics(data.data(), reconstructed_data, data.size());
-        auto a2 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 3);
-        cout << "Average: ";
-        compare(a1, a2);
-        auto a22 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 5);
-        cout << "Average2: ";
-        compare(a12, a22);
+        // auto a2 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 3);
+        // cout << "Average: ";
+        // compare(a1, a2);
+        // auto a22 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 5);
+        // cout << "Average2: ";
+        // compare(a12, a22);
     }
 }
 
@@ -140,14 +140,15 @@ int main(int argc, char ** argv){
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
     auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    auto compressor = MDR::DefaultLevelCompressor();
-    // auto compressor = MDR::AdaptiveLevelCompressor();
+    // auto compressor = MDR::DefaultLevelCompressor();
+    auto compressor = MDR::AdaptiveLevelCompressor();
     // auto compressor = MDR::NullLevelCompressor();
     auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
     switch(error_mode){
         case 1:{
             auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, s);
-            auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
+            // auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
+            auto interpreter = MDR::NegaBinaryGreedyBasedSizeInterpreter<MDR::SNormErrorEstimator<T>>(estimator);
             // auto estimator = MDR::L2ErrorEstimator_HB<T>(num_dims, num_levels - 1);
             // auto interpreter = MDR::SignExcludeGreedyBasedSizeInterpreter<MDR::L2ErrorEstimator_HB<T>>(estimator);
             test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);            

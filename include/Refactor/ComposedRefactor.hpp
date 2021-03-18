@@ -90,14 +90,16 @@ namespace MDR {
                 T level_max_error = compute_max_abs_value(reinterpret_cast<T*>(buffer), level_elements[i]);
                 level_error_bounds.push_back(level_max_error);
                 // collect errors
-                auto collected_error = s_collector.collect_level_error(buffer, level_elements[i], num_bitplanes, level_max_error);
-                level_squared_errors.push_back(collected_error);
+                // auto collected_error = s_collector.collect_level_error(buffer, level_elements[i], num_bitplanes, level_max_error);
+                // level_squared_errors.push_back(collected_error);
                 // encode level data
                 int level_exp = 0;
                 frexp(level_max_error, &level_exp);
                 std::vector<uint32_t> stream_sizes;
-                auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes);
+                std::vector<double> level_sq_err;
+                auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err);
                 free(buffer);
+                level_squared_errors.push_back(level_sq_err);
                 // lossless compression
                 uint8_t stopping_index = compressor.compress_level(streams, stream_sizes);
                 stopping_indices.push_back(stopping_index);

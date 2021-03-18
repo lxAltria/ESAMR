@@ -6,7 +6,7 @@
 
 namespace MDR {
     #define LATTER_INDEX 24
-    #define CR_THRESHOLD 1.1
+    #define CR_THRESHOLD 1.05
     // compress all layers
     class AdaptiveLevelCompressor : public concepts::LevelCompressorInterface {
     public:

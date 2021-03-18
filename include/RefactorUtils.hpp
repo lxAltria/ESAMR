@@ -156,6 +156,7 @@ namespace MDR {
         }
         void print(std::string s){
             std::cout << s << " time: " << total_time << "s" << std::endl;
+            clear();
         }
     private:
         int err = 0;

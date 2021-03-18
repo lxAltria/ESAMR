@@ -69,10 +69,78 @@ namespace MDR {
             free(streams[0]);
             streams[0] = merged;
             stream_sizes[0] = merged_size;
-            // for(int i=0; i<num_bitplanes; i++){
-            //     std::cout << stream_sizes[i] << " ";
-            // }
-            // std::cout << std::endl;
+            return streams;
+        }
+
+        // only differs in error collection
+        std::vector<uint8_t *> encode(T_data const * data, int32_t n, int32_t exp, uint8_t num_bitplanes, std::vector<uint32_t>& stream_sizes, std::vector<double>& level_errors) const {
+            assert(num_bitplanes > 0);
+            // determine block size based on bitplane integer type
+            uint32_t block_size = block_size_based_on_bitplane_int_type<T_stream>();
+            std::vector<uint8_t> starting_bitplanes = std::vector<uint8_t>((n - 1)/block_size + 1, 0);
+            stream_sizes = std::vector<uint32_t>(num_bitplanes, 0);
+            // define fixed point type
+            using T_fp = typename std::conditional<std::is_same<T_data, double>::value, uint64_t, uint32_t>::type;
+            std::vector<uint8_t *> streams;
+            for(int i=0; i<num_bitplanes; i++){
+                streams.push_back((uint8_t *) malloc(2 * n / UINT8_BITS + sizeof(T_stream)));
+            }
+            std::vector<T_fp> int_data_buffer(block_size, 0);
+            std::vector<T_stream *> streams_pos(streams.size());
+            for(int i=0; i<streams.size(); i++){
+                streams_pos[i] = reinterpret_cast<T_stream*>(streams[i]);
+            }
+            // init level errors
+            level_errors.clear();
+            level_errors.resize(num_bitplanes + 1);
+            for(int i=0; i<level_errors.size(); i++){
+                level_errors[i] = 0;
+            }
+            T_data const * data_pos = data;
+            int block_id=0;
+            for(int i=0; i<n - block_size; i+=block_size){
+                T_stream sign_bitplane = 0;
+                for(int j=0; j<block_size; j++){
+                    T_data cur_data = *(data_pos++);
+                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    // compute level errors
+                    collect_level_errors(level_errors, fabs(shifted_data), num_bitplanes);
+                    int64_t fix_point = (int64_t) shifted_data;
+                    T_stream sign = cur_data < 0;
+                    int_data_buffer[j] = sign ? -fix_point : +fix_point;
+                    sign_bitplane += sign << j;
+                }
+                starting_bitplanes[block_id ++] = encode_block(int_data_buffer.data(), block_size, num_bitplanes, sign_bitplane, streams_pos);
+            }
+            // leftover
+            {
+                int rest_size = n - block_size * block_id;
+                T_stream sign_bitplane = 0;
+                for(int j=0; j<rest_size; j++){
+                    T_data cur_data = *(data_pos++);
+                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    // compute level errors
+                    collect_level_errors(level_errors, fabs(shifted_data), num_bitplanes);
+                    int64_t fix_point = (int64_t) shifted_data;
+                    T_stream sign = cur_data < 0;
+                    int_data_buffer[j] = sign ? -fix_point : +fix_point;
+                    sign_bitplane += sign << j;
+                }
+                starting_bitplanes[block_id ++] = encode_block(int_data_buffer.data(), rest_size, num_bitplanes, sign_bitplane, streams_pos);
+            }
+            for(int i=0; i<num_bitplanes; i++){
+                stream_sizes[i] = reinterpret_cast<uint8_t*>(streams_pos[i]) - streams[i];
+            }
+            // merge starting_bitplane with the first bitplane
+            uint32_t merged_size = 0;
+            uint8_t * merged = merge_arrays(reinterpret_cast<uint8_t const*>(starting_bitplanes.data()), starting_bitplanes.size() * sizeof(uint8_t), reinterpret_cast<uint8_t*>(streams[0]), stream_sizes[0], merged_size);
+            free(streams[0]);
+            streams[0] = merged;
+            stream_sizes[0] = merged_size;
+            // translate level errors
+            for(int i=0; i<level_errors.size(); i++){
+                level_errors[i] = ldexp(level_errors[i], 2*(- num_bitplanes + exp));
+            }
             return streams;
         }
 
@@ -252,6 +320,18 @@ namespace MDR {
                 exit(0);
             }
             return block_size;
+        }
+        inline void collect_level_errors(std::vector<double>& level_errors, float data, int num_bitplanes) const {
+            uint32_t fp_data = (uint32_t) data;
+            double mantissa = data - (uint32_t) data;
+            level_errors[num_bitplanes] += mantissa * mantissa;
+            for(int k=1; k<num_bitplanes; k++){
+                uint32_t mask = (1 << k) - 1;
+                double diff = (double) (fp_data & mask) + mantissa;
+                level_errors[num_bitplanes - k] += diff * diff;
+            }
+            double diff = fp_data + mantissa;
+            level_errors[0] += data * data;
         }
 
         template <class T_int>
