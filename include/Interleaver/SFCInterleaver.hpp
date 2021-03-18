@@ -96,7 +96,7 @@ namespace MDR {
             }
         }
         void print() const {
-            std::cout << "Direct interleaver" << std::endl;
+            std::cout << "Space filling curve interleaver" << std::endl;
         }
     private:
         size_t collect_data_3d_blocked(const T * data, const size_t n1, const size_t n2, const size_t n3, const size_t dim0_offset, const size_t dim1_offset, const int block_size, T * buffer) const{

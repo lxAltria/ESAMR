@@ -3,5 +3,6 @@
 
 #include "DirectInterleaver.hpp"
 #include "SFCInterleaver.hpp"
+#include "BlockedInterleaver.hpp"
 
 #endif
