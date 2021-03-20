@@ -238,6 +238,7 @@ namespace MDR {
                 else{
                     current_error_gain = next_error_gain;
                     current_efficiency = next_efficiency;
+                    current_size = next_size;
                     consecutive_num = i;
                 }
             }

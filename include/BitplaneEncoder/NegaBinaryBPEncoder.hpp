@@ -229,9 +229,6 @@ namespace MDR {
             return (x ^0xaaaaaaaau) - 0xaaaaaaaau;
         }
         inline void collect_level_errors(std::vector<double>& level_errors, uint32_t negabinary_data, float data, float mantissa, int num_bitplanes) const {
-            // for(int i=0; i<level_errors.size(); i++){
-            //     level_errors[i] = 0;
-            // }
             level_errors[num_bitplanes] += mantissa * mantissa;
             for(int k=1; k<num_bitplanes; k++){
                 uint32_t mask = (1 << k) - 1;
@@ -239,14 +236,6 @@ namespace MDR {
                 level_errors[num_bitplanes - k] += diff * diff;
             }
             level_errors[0] += data * data;
-            // if(data){
-            //     std::cout << data << " " << mantissa << std::endl;
-            //     for(int i=0; i<level_errors.size(); i++){
-            //         std::cout << level_errors[i] << " ";
-            //     }
-            //     std::cout << std::endl;
-            //     exit(0);
-            // }
         }
         template <class T_int>
         inline void encode_block(T_int const * data, size_t n, uint8_t num_bitplanes, std::vector<T_stream *>& streams_pos) const {
