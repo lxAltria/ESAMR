@@ -45,7 +45,7 @@ namespace MDR {
         std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
             std::vector<std::vector<const uint8_t*>> level_components;
             release();
-            uint32_t total_retrieve_size = 0;
+            uint32_t retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
                 std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
                 std::vector<const uint8_t*> interleaved_level;
@@ -64,10 +64,16 @@ namespace MDR {
                         pos += level_sizes[i][bitplane_offsets[i] + k];
                     }
                     bitplane_offsets[i] += num_bitplanes;
-                    total_retrieve_size += level_segment_size[i][segment_offsets[i]];
+                    retrieve_size += level_segment_size[i][segment_offsets[i]];
                     segment_offsets[i] ++;
                 }
                 level_components.push_back(interleaved_level);
+            }
+            uint32_t total_retrieve_size = 0;
+            for(int i=0; i<level_files.size(); i++){
+                for(int j=0; j<level_num_bitplanes[i]; j++){
+                    total_retrieve_size += level_segment_size[i][j];
+                }
             }
             std::cout << "Total retrieve size = " << total_retrieve_size << std::endl;
             return level_components;
