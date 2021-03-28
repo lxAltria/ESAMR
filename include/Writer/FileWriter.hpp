@@ -10,9 +10,10 @@ namespace MDR {
     public:
         ConcatLevelFileWriter(const std::string& metadata_file, const std::vector<std::string>& level_files) : metadata_file(metadata_file), level_files(level_files) {}
 
-        std::vector<uint32_t> write_level_components(const std::vector<std::vector<uint8_t*>>& level_components, const std::vector<std::vector<uint32_t>>& level_sizes) const {
-            std::vector<uint32_t> level_num;
+        std::vector<std::vector<uint32_t>> write_level_components(const std::vector<std::vector<uint8_t*>>& level_components, const std::vector<std::vector<uint32_t>>& level_sizes) const {
+            std::vector<std::vector<uint32_t>> level_merged_count;
             for(int i=0; i<level_components.size(); i++){
+                std::vector<uint32_t> merged_count;
                 uint32_t concated_level_size = 0;
                 for(int j=0; j<level_components[i].size(); j++){
                     concated_level_size += level_sizes[i][j];
@@ -22,14 +23,15 @@ namespace MDR {
                 for(int j=0; j<level_components[i].size(); j++){
                     memcpy(concated_level_data_pos, level_components[i][j], level_sizes[i][j]);
                     concated_level_data_pos += level_sizes[i][j];
+                    merged_count.push_back(1);
                 }
                 FILE * file = fopen((level_files[i]).c_str(), "w");
                 fwrite(concated_level_data, 1, concated_level_size, file);
                 fclose(file);
                 free(concated_level_data);
-                level_num.push_back(1);
+                level_merged_count.push_back(merged_count);
             }
-            return level_num;
+            return level_merged_count;
         }
 
         void write_metadata(uint8_t const * metadata, uint32_t size) const {
@@ -46,6 +48,7 @@ namespace MDR {
     private:
         std::vector<std::string> level_files;
         std::string metadata_file;
+
     };
 }
 #endif

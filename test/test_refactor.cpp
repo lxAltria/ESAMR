@@ -61,8 +61,8 @@ int main(int argc, char ** argv){
     auto compressor = MDR::AdaptiveLevelCompressor(28);
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
-    auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
-    // auto writer = MDR::HPSSFileWriter(metadata_file, files, 2048, 512 * 1024 * 1024);
+    // auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
+    auto writer = MDR::HPSSFileWriter(metadata_file, files, 2048, 512 * 1024 * 1024);
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);
     return 0;

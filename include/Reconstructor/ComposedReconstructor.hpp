@@ -47,10 +47,22 @@ namespace MDR {
             timer.print("Preprocessing");            
 
             timer.start();
+            // per-bitplane retrieval
             auto prev_level_num_bitplanes(level_num_bitplanes);
-            auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
-            // retrieve data
-            level_components = retriever.retrieve_level_components(level_sizes, retrieve_sizes, prev_level_num_bitplanes, level_num_bitplanes);
+            // auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
+            // level_components = retriever.retrieve_level_components(level_sizes, retrieve_sizes, prev_level_num_bitplanes, level_num_bitplanes);
+            {
+                // merged data retrieval
+                auto prev_level_num_segment(level_num_segment);
+                auto retrieve_sizes = interpreter.interpret_retrieve_size(retriever.get_level_segment_size(), retriever.get_level_segment_error(), tolerance, level_num_segment);                
+                level_components = retriever.retrieve_level_components(level_sizes, retrieve_sizes, prev_level_num_segment, level_num_segment);
+                // update level bitplane
+                for(int i=0; i<=target_level; i++){
+                    for(int j=prev_level_num_segment[i]; j<level_num_segment[i]; j++){
+                        level_num_bitplanes[i] += level_merged_count[i][j];
+                    }
+                }
+            }
             // check whether to reconstruct to full resolution
             int skipped_level = 0;
             for(int i=0; i<=target_level; i++){
@@ -102,9 +114,11 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_squared_errors);
             deserialize(metadata_pos, num_levels, level_sizes);
             deserialize(metadata_pos, num_levels, stopping_indices);
-            deserialize(metadata_pos, num_levels, level_num);
+            deserialize(metadata_pos, num_levels, level_merged_count);
             level_num_bitplanes = std::vector<uint8_t>(num_levels, 0);
+            level_num_segment = std::vector<uint8_t>(num_levels, 0);
             free(metadata);
+            retriever.init(level_sizes, level_squared_errors, level_merged_count);
         }
 
         const std::vector<uint32_t>& get_dimensions(){
@@ -123,8 +137,8 @@ namespace MDR {
         }
     private:
         bool reconstruct(uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, bool progressive=true){
-            Timer timer;
-            timer.start();
+            // Timer timer;
+            // timer.start();
             auto level_dims = compute_level_dims(dimensions, target_level);
             auto reconstruct_dimensions = level_dims[target_level];
             uint32_t num_elements = 1;
@@ -133,35 +147,35 @@ namespace MDR {
             }
             data.clear();
             data = std::vector<T>(num_elements, 0);
-            timer.end();
-            timer.print("Reconstruct Preprocessing");            
+            // timer.end();
+            // timer.print("Reconstruct Preprocessing");            
 
             auto level_elements = compute_level_elements(level_dims, target_level);
             std::vector<uint32_t> dims_dummy(reconstruct_dimensions.size(), 0);
             for(int i=0; i<=target_level; i++){
-                timer.start();
+                // timer.start();
                 compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], stopping_indices[i]);
-                timer.end();
-                timer.print("Lossless");            
-                timer.start();
+                // timer.end();
+                // timer.print("Lossless");            
+                // timer.start();
                 int level_exp = 0;
                 frexp(level_error_bounds[i], &level_exp);
                 auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                 compressor.decompress_release();
-                timer.end();
-                timer.print("Decoding");            
+                // timer.end();
+                // timer.print("Decoding");            
 
-                timer.start();
+                // timer.start();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
                 interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data());
                 free(level_decoded_data);
-                timer.end();
-                timer.print("Reposition");            
+                // timer.end();
+                // timer.print("Reposition");            
             }
-            timer.start();
+            // timer.start();
             decomposer.recompose(data.data(), reconstruct_dimensions, target_level);
-            timer.end();
-            timer.print("Recomposing");            
+            // timer.end();
+            // timer.print("Recomposing");            
             return true;
         }
 
@@ -178,8 +192,9 @@ namespace MDR {
         std::vector<uint8_t> stopping_indices;
         std::vector<std::vector<const uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
-        std::vector<uint32_t> level_num;
+        std::vector<std::vector<uint32_t>> level_merged_count;
         std::vector<std::vector<double>> level_squared_errors;
+        std::vector<uint8_t> level_num_segment;
     };
 }
 #endif
