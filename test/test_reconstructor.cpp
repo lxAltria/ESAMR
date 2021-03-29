@@ -17,16 +17,17 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
     struct timespec start, end;
     int err = 0;
     auto dims = reconstructor.get_dimensions();
-    // auto a1 = compute_average(data.data(), dims[0], dims[1], dims[2], 3);
-    // auto a12 = compute_average(data.data(), dims[0], dims[1], dims[2], 5);
+    double time = 0;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     for(int i=0; i<tolerance.size(); i++){
-        cout << "Start reconstruction" << endl;
-        err = clock_gettime(CLOCK_REALTIME, &start);
+        // cout << "Start reconstruction" << endl;
+        // err = clock_gettime(CLOCK_REALTIME, &start);
         auto reconstructed_data = reconstructor.progressive_reconstruct(tolerance[i]);
-        err = clock_gettime(CLOCK_REALTIME, &end);
-        cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+        // err = clock_gettime(CLOCK_REALTIME, &end);
+        // cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         // TODO: add full resolution check
-        MGARD::print_statistics(data.data(), reconstructed_data, data.size());
+        if(rank == 0) MGARD::print_statistics(data.data(), reconstructed_data, data.size());
         // COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
         // COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 5);
     }
@@ -35,9 +36,20 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
 template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorEstimator, class SizeInterpreter, class Retriever>
 void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
     auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
-    cout << "loading metadata" << endl;
+    // cout << "loading metadata" << endl;
+    double time = 0;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0){
+        time = - MPI_Wtime();
+    }
     reconstructor.load_metadata();
-
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0){
+        time = + MPI_Wtime();
+        cout << "metadata reading time = " << time << endl;
+    }    
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     evaluate(data, tolerance, reconstructor);
@@ -60,12 +72,16 @@ int main(int argc, char ** argv){
     int num_dims = 0;
     {
         // metadata interpreter, otherwise information needs to be provided
-        size_t num_bytes = 0;
-        auto metadata = MGARD::readfile<uint8_t>(metadata_file.c_str(), num_bytes);
-        assert(num_bytes > num_dims * sizeof(uint32_t) + 2);
-        num_dims = metadata[0];
-        num_levels = metadata[num_dims * sizeof(uint32_t) + 1];
-        cout << "number of dimension = " << num_dims << ", number of levels = " << num_levels << endl;
+        // size_t num_bytes = 0;
+        // auto metadata = MGARD::readfile<uint8_t>(metadata_file.c_str(), num_bytes);
+        // assert(num_bytes > num_dims * sizeof(uint32_t) + 2);
+        // num_dims = metadata[0];
+        // num_levels = metadata[num_dims * sizeof(uint32_t) + 1];
+        // cout << "number of dimension = " << num_dims << ", number of levels = " << num_levels << endl;
+
+        // fix num_dims and num_levels for this example
+        num_dims = 3;
+        num_levels = 4;
     }
     vector<string> files;
     for(int i=0; i<num_levels; i++){

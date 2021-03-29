@@ -20,8 +20,15 @@ namespace MDR {
             : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), collector(collector), writer(writer) {}
 
         void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes){
-            Timer timer;
-            timer.start();
+            // Timer timer;
+            // timer.start();
+            double time = 0;
+            int rank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time = - MPI_Wtime();
+            }
             dimensions = dims;
             uint32_t num_elements = 1;
             for(const auto& dim:dimensions){
@@ -30,15 +37,31 @@ namespace MDR {
             data = std::vector<T>(data_, data_ + num_elements);
             // if refactor successfully
             if(refactor(target_level, num_bitplanes)){
-                timer.end();
-                timer.print("Refactor");
-                timer.start();
+                MPI_Barrier(MPI_COMM_WORLD);
+                if(rank == 0){
+                    time += MPI_Wtime();
+                    std::cout << "refactor time = " << time << std::endl;
+                }
+                MPI_Barrier(MPI_COMM_WORLD);
+                // timer.end();
+                // timer.print("Refactor");
+                // timer.start();
+                if(rank == 0){
+                    time = - MPI_Wtime();
+                }
                 level_merged_count = writer.write_level_components(level_components, level_sizes);
-                timer.end();
-                timer.print("Write");                
+                // timer.end();
+                // timer.print("Write");                
             }
 
             write_metadata();
+
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time += MPI_Wtime();
+                std::cout << "writing time = " << time << std::endl;
+            }
+
             for(int i=0; i<level_components.size(); i++){
                 for(int j=0; j<level_components[i].size(); j++){
                     free(level_components[i][j]);                    

@@ -36,11 +36,6 @@ namespace MDR {
                 level_segment_size.push_back(segment_size);
                 level_segment_error.push_back(segment_error);
             }
-            print_vec("Level sizes", level_sizes);
-            print_vec("Level errors", level_squared_errors);
-            print_vec("Level merged count", level_merged_count);
-            print_vec("Level merged sizes", level_segment_size);
-            print_vec("Level merged errors", level_segment_error);
         }
 
         std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
@@ -51,7 +46,7 @@ namespace MDR {
             release();
             uint32_t retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
-                std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
+                // std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
                 std::vector<const uint8_t*> interleaved_level;
                 for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
                     // read one segment 
@@ -82,7 +77,7 @@ namespace MDR {
                     total_retrieve_size += level_segment_size[i][j];
                 }
             }
-            std::cout << "Total retrieve size = " << total_retrieve_size << std::endl;
+            // std::cout << "Total retrieve size = " << total_retrieve_size << std::endl;
             return level_components;
         }
 

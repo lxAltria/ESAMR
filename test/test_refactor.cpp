@@ -15,11 +15,11 @@ template <class T, class Refactor>
 void evaluate(const vector<T>& data, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Refactor refactor){
     struct timespec start, end;
     int err = 0;
-    cout << "Start refactoring" << endl;
+    // cout << "Start refactoring" << endl;
     err = clock_gettime(CLOCK_REALTIME, &start);
     refactor.refactor(data.data(), dims, target_level, num_bitplanes);
     err = clock_gettime(CLOCK_REALTIME, &end);
-    cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+    // cout << "Refactor time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
 }
 
 template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorCollector, class Writer>

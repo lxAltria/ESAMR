@@ -11,6 +11,7 @@
 #include "SizeInterpreter/SizeInterpreter.hpp"
 #include "LosslessCompressor/LevelCompressor.hpp"
 #include "RefactorUtils.hpp"
+#include <mpi.h>
 
 namespace MDR {
     // a decomposition-based scientific data reconstructor: inverse operator of composed refactor
@@ -22,13 +23,20 @@ namespace MDR {
 
         // reconstruct data from encoded streams
         T * reconstruct(double tolerance){
-            Timer timer;
-            timer.start();
+            double time;
+            int rank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time = - MPI_Wtime();
+            }
+            // Timer timer;
+            // timer.start();
             std::vector<std::vector<double>> level_abs_errors;
             uint8_t target_level = level_error_bounds.size() - 1;
             std::vector<std::vector<double>>& level_errors = level_squared_errors;
             if(std::is_base_of<MaxErrorEstimator<T>, ErrorEstimator>::value){
-                std::cout << "ErrorEstimator is base of MaxErrorEstimator, computing absolute error" << std::endl;
+                // std::cout << "ErrorEstimator is base of MaxErrorEstimator, computing absolute error" << std::endl;
                 MaxErrorCollector<T> collector = MaxErrorCollector<T>();
                 for(int i=0; i<=target_level; i++){
                     auto collected_error = collector.collect_level_error(NULL, 0, level_squared_errors[i].size(), level_error_bounds[i]);
@@ -37,16 +45,16 @@ namespace MDR {
                 level_errors = level_abs_errors;
             }
             else if(std::is_base_of<SquaredErrorEstimator<T>, ErrorEstimator>::value){
-                std::cout << "ErrorEstimator is base of SquaredErrorEstimator, using level squared error directly" << std::endl;
+                // std::cout << "ErrorEstimator is base of SquaredErrorEstimator, using level squared error directly" << std::endl;
             }
             else{
                 std::cerr << "Customized error estimator not supported yet" << std::endl;
                 exit(-1);
             }
-            timer.end();
-            timer.print("Preprocessing");            
+            // timer.end();
+            // timer.print("Preprocessing");            
 
-            timer.start();
+            // timer.start();
             // per-bitplane retrieval
             auto prev_level_num_bitplanes(level_num_bitplanes);
             // auto retrieve_sizes = interpreter.interpret_retrieve_size(level_sizes, level_errors, tolerance, level_num_bitplanes);
@@ -73,10 +81,24 @@ namespace MDR {
             }
             // TODO: uncomment skip level to reconstruct low resolution data
             // target_level -= skipped_level;
-            timer.end();
-            timer.print("Interpret and retrieval");
-
+            // timer.end();
+            // timer.print("Interpret and retrieval");
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time += MPI_Wtime();
+                std::cout << "Interpreting and reading time = " << time << std::endl;
+            }
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time = - MPI_Wtime();
+            }
             bool success = reconstruct(target_level, prev_level_num_bitplanes);
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time += MPI_Wtime();
+                std::cout << "Recomposing time = " << time << std::endl;
+            }
             retriever.release();
             if(success) return data.data();
             else{
