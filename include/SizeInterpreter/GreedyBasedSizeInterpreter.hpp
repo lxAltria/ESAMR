@@ -163,8 +163,6 @@ namespace MDR {
             error_estimator = e;
         }
         std::vector<uint32_t> interpret_retrieve_size(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<std::vector<double>>& level_errors, double tolerance, std::vector<uint8_t>& index) const {
-            print_vec("sizes", level_sizes);
-            print_vec("errors", level_errors);
             int num_levels = level_sizes.size();
             std::vector<uint32_t> retrieve_sizes(num_levels, 0);
             double accumulated_error = 0;
@@ -175,29 +173,29 @@ namespace MDR {
             // identify minimal level
             double min_error = accumulated_error;
             for(int i=0; i<num_levels; i++){
-                std::cout << index[i] << std::endl;
-                min_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
-                min_error += error_estimator.estimate_error(level_errors[i].back(), i);
-                // fetch the first component if index is 0
-                if(index[i] == 0){
-                    retrieve_sizes[i] += level_sizes[i][index[i]];
-                    accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
-                    accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
-                    index[i] ++;
-                    std::cout << i;
-                }
-                // push the next one
+                // min_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                // min_error += error_estimator.estimate_error(level_errors[i].back(), i);
+                // // fetch the first component if index is 0
+                // if(index[i] == 0){
+                //     retrieve_sizes[i] += level_sizes[i][index[i]];
+                //     accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                //     accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
+                //     index[i] ++;
+                //     std::cout << i;
+                // }
+                // // push the next one
+                // if(index[i] != level_sizes[i].size()){
+                //     heap.push(estimated_efficiency(accumulated_error, index[i], i, level_errors[i], level_sizes[i]));
+                // }
+                // if(min_error < tolerance){
+                //     // the min error of first 0~i levels meets the tolerance
+                //     num_levels = i + 1;
+                //     break;
+                // }
                 if(index[i] != level_sizes[i].size()){
-                    heap.push(estimated_efficiency(accumulated_error, index[i], i, level_errors[i], level_sizes[i]));
-                }
-                if(min_error < tolerance){
-                    // the min error of first 0~i levels meets the tolerance
-                    num_levels = i + 1;
-                    break;
+                    heap.push(estimated_efficiency(accumulated_error, index[i], i, level_errors[i], level_sizes[i]));                
                 }
             }
-
-            // std::cout << "Determining #levels" << std::endl;
 
             bool tolerance_met = accumulated_error < tolerance;
             while((!tolerance_met) && (!heap.empty())){
@@ -222,11 +220,6 @@ namespace MDR {
             }
             std::cout << std::endl;
             std::cout << "Requested tolerance = " << tolerance << ", estimated error = " << accumulated_error << std::endl;
-            uint32_t size = 0;
-            for(int i=0; i<retrieve_sizes.size(); i++){
-                size += retrieve_sizes[i];
-            }
-            std::cout << "Retrieve size = " << size << std::endl;
             return retrieve_sizes;
         }
         void print() const {

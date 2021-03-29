@@ -17,9 +17,9 @@ target_include_directories(test_error_collector PRIVATE ${MGARDx_INCLUDES} ${SZ3
 target_link_libraries(test_error_collector ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
 
 add_executable (test_refactor test_refactor.cpp)
-target_include_directories(test_refactor PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
-target_link_libraries(test_refactor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+target_include_directories(test_refactor PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${MPI_INCLUDE_PATH})
+target_link_libraries(test_refactor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${MPI_LIBRARIES})
 
 add_executable (test_reconstructor test_reconstructor.cpp)
-target_include_directories(test_reconstructor PRIVATE ${EVA_INCLUDES} ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
-target_link_libraries(test_reconstructor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB})
+target_include_directories(test_reconstructor PRIVATE ${EVA_INCLUDES} ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES} ${MPI_INCLUDE_PATH})
+target_link_libraries(test_reconstructor ${PROJECT_NAME} ${SZ3_LIB} ${ZSTD_LIB} ${MPI_LIBRARIES})

@@ -7,8 +7,9 @@
 #include <bitset>
 #include "utils.hpp"
 #include "Reconstructor/Reconstructor.hpp"
+#include <mpi.h>
+// #include "evaluate.hpp"
 
-#include "evaluate.hpp"
 using namespace std;
 
 template <class T, class Reconstructor>
@@ -26,14 +27,8 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         // TODO: add full resolution check
         MGARD::print_statistics(data.data(), reconstructed_data, data.size());
-        // auto a2 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 3);
-        // cout << "Average: ";
-        // compare(a1, a2);
-        // auto a22 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 5);
-        // cout << "Average2: ";
-        // compare(a12, a22);
-        COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
-        COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 5);
+        // COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
+        // COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 5);
     }
 }
 
@@ -49,7 +44,7 @@ void test(string filename, const vector<double>& tolerance, Decomposer decompose
 }
 
 int main(int argc, char ** argv){
-
+    MPI_Init(&argc, &argv);
     int argv_id = 1;
     string filename = string(argv[argv_id ++]);
     int error_mode = atoi(argv[argv_id++]);
@@ -113,5 +108,6 @@ int main(int argc, char ** argv){
             test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);
         }
     }    
+    MPI_Finalize();
     return 0;
 }

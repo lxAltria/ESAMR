@@ -6,6 +6,9 @@ set (CMAKE_CXX_FLAGS "-g -O3")
 
 set (MGARDx_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/MGARDx/install/include")
 
+find_package(MPI REQUIRED)
+# include_directories(${MPI_INCLUDE_PATH})
+
 find_library(ZSTD_LIB zstd HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ/install/lib")
 find_library(SZ3_LIB SZ3 HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ3/build/src")
 set (ZSTD_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ/install/include")

@@ -9,6 +9,7 @@
 #include "LosslessCompressor/LevelCompressor.hpp"
 #include "Writer/Writer.hpp"
 #include "RefactorUtils.hpp"
+#include <mpi.h>
 
 namespace MDR {
     // a decomposition-based scientific data refactor: compose a refactor using decomposer, interleaver, encoder, and error collector
@@ -94,6 +95,8 @@ namespace MDR {
             auto level_elements = compute_level_elements(level_dims, target_level);
             std::vector<uint32_t> dims_dummy(dimensions.size(), 0);
             SquaredErrorCollector<T> s_collector = SquaredErrorCollector<T>();
+            // compute and reduce level max value
+            std::vector<T *> buffers;
             for(int i=0; i<=target_level; i++){
                 // timer.start();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
@@ -103,6 +106,11 @@ namespace MDR {
                 // compute max coefficient as level error bound
                 T level_max_error = compute_max_abs_value(reinterpret_cast<T*>(buffer), level_elements[i]);
                 level_error_bounds.push_back(level_max_error);
+                buffers.push_back(buffer);
+            }
+            auto date_type = std::is_same<T, double>::value ? MPI_DOUBLE : MPI_FLOAT;
+            MPI_Allreduce(MPI_IN_PLACE, level_error_bounds.data(), level_error_bounds.size(), date_type, MPI_MAX, MPI_COMM_WORLD);
+            for(int i=0; i<=target_level; i++){
                 // timer.end();
                 // timer.print("Interleave");
                 // collect errors
@@ -111,11 +119,11 @@ namespace MDR {
                 // encode level data
                 // timer.start();
                 int level_exp = 0;
-                frexp(level_max_error, &level_exp);
+                frexp(level_error_bounds[i], &level_exp);
                 std::vector<uint32_t> stream_sizes;
                 std::vector<double> level_sq_err;
-                auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err);
-                free(buffer);
+                auto streams = encoder.encode(buffers[i], level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err);
+                free(buffers[i]);
                 level_squared_errors.push_back(level_sq_err);
                 // timer.end();
                 // timer.print("Encoding");
