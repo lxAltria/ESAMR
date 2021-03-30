@@ -64,6 +64,23 @@ namespace MDR {
                 }
                 level_merged_count.push_back(merged_count);
             }
+	if(!rank){
+        const std::map<std::string, adios2::Params> variables =
+            bpIO.AvailableVariables();
+
+        for (const auto variablePair : variables)
+        {
+            std::cout << "Name: " << variablePair.first;
+
+            for (const auto &parameter : variablePair.second)
+            {
+                std::cout << "\t" << parameter.first << ": " << parameter.second
+                          << "\n";
+            }
+        }
+	}
+
+
             return level_merged_count;
         }
 
