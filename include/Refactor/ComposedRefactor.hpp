@@ -9,6 +9,7 @@
 #include "LosslessCompressor/LevelCompressor.hpp"
 #include "Writer/Writer.hpp"
 #include "RefactorUtils.hpp"
+#include <vector>
 #include <mpi.h>
 
 namespace MDR {
@@ -66,6 +67,11 @@ namespace MDR {
                 for(int j=0; j<level_components[i].size(); j++){
                     free(level_components[i][j]);                    
                 }
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            if(rank == 0){
+                time += MPI_Wtime();
+                std::cout << "refactor done" << std::endl;
             }
         }
 
@@ -160,7 +166,26 @@ namespace MDR {
                 // timer.end();
                 // timer.print("Lossless time");
             }
-            // print_vec("level sizes", level_sizes);
+            // squared error
+            int squared_error_count = 0;
+            for(int i=0; i<level_squared_errors.size(); i++){
+                squared_error_count += level_squared_errors[i].size();
+            }
+            std::cout << squared_error_count << std::endl;
+            double * squared_error_buffer = (double *) malloc(squared_error_count * sizeof(double));
+            double * squared_error_buffer_pos = squared_error_buffer;
+            for(int i=0; i<level_squared_errors.size(); i++){
+                memcpy(squared_error_buffer_pos, level_squared_errors[i].data(), level_squared_errors[i].size() * sizeof(double));
+                squared_error_buffer_pos += level_squared_errors[i].size() * sizeof(double);
+            }
+            MPI_Allreduce(MPI_IN_PLACE, squared_error_buffer, squared_error_count, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            // copy back
+            squared_error_buffer_pos = squared_error_buffer;
+            for(int i=0; i<level_squared_errors.size(); i++){
+                memcpy(level_squared_errors[i].data(), squared_error_buffer_pos, level_squared_errors[i].size() * sizeof(double));
+                squared_error_buffer_pos += level_squared_errors[i].size() * sizeof(double);
+            }
+            free(squared_error_buffer);
             return true;
         }
 
