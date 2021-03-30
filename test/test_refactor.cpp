@@ -33,6 +33,8 @@ void test(string filename, const vector<uint32_t>& dims, int target_level, int n
 int main(int argc, char ** argv){
 
     MPI_Init(&argc, &argv);
+    int size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
     int argv_id = 1;
     string filename = string(argv[argv_id ++]);
     int target_level = atoi(argv[argv_id ++]);
@@ -64,7 +66,7 @@ int main(int argc, char ** argv){
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
     // auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
-    auto writer = MDR::HPSSFileWriter(metadata_file, files, 2048, 512 * 1024 * 1024);
+    auto writer = MDR::HPSSFileWriter(metadata_file, files, size, 512 * 1024 * 1024);
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);
 
