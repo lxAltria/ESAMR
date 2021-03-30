@@ -55,7 +55,9 @@ namespace MDR {
                 // timer.print("Write");                
             }
 
-            write_metadata();
+            if(rank == 0){
+                write_metadata();            
+            }
 
             MPI_Barrier(MPI_COMM_WORLD);
             if(rank == 0){
@@ -67,11 +69,6 @@ namespace MDR {
                 for(int j=0; j<level_components[i].size(); j++){
                     free(level_components[i][j]);                    
                 }
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-            if(rank == 0){
-                time += MPI_Wtime();
-                std::cout << "refactor done" << std::endl;
             }
         }
 
@@ -171,19 +168,18 @@ namespace MDR {
             for(int i=0; i<level_squared_errors.size(); i++){
                 squared_error_count += level_squared_errors[i].size();
             }
-            std::cout << squared_error_count << std::endl;
             double * squared_error_buffer = (double *) malloc(squared_error_count * sizeof(double));
             double * squared_error_buffer_pos = squared_error_buffer;
             for(int i=0; i<level_squared_errors.size(); i++){
                 memcpy(squared_error_buffer_pos, level_squared_errors[i].data(), level_squared_errors[i].size() * sizeof(double));
-                squared_error_buffer_pos += level_squared_errors[i].size() * sizeof(double);
+                squared_error_buffer_pos += level_squared_errors[i].size();
             }
             MPI_Allreduce(MPI_IN_PLACE, squared_error_buffer, squared_error_count, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             // copy back
             squared_error_buffer_pos = squared_error_buffer;
             for(int i=0; i<level_squared_errors.size(); i++){
                 memcpy(level_squared_errors[i].data(), squared_error_buffer_pos, level_squared_errors[i].size() * sizeof(double));
-                squared_error_buffer_pos += level_squared_errors[i].size() * sizeof(double);
+                squared_error_buffer_pos += level_squared_errors[i].size();
             }
             free(squared_error_buffer);
             return true;
