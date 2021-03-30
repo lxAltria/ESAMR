@@ -68,8 +68,7 @@ namespace MDR {
                         // printf("write...%s\n", filename);
                         adios2::Engine bpFileReader = reader_io.Open(filename, adios2::Mode::Read);
                         bpFileReader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
-                        bpFileWriter.Close();
-
+                        bpFileReader.Close();
                     }
                     concated_level_components.push_back(buffer);
                     // interleave level component
