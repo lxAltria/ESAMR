@@ -79,14 +79,6 @@ namespace MDR {
             std::cout << "HPSS file writer." << std::endl;
         }
     private:
-        inline void MPIIO_write(MPI_Comm comm, const int rank, const int size, uint32_t num_elements, uint8_t * data, const std::string& filename) const {
-            size_t offset = rank * num_elements * sizeof(unsigned char);
-            MPI_File fh;
-            MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
-            MPI_File_write_at(fh, offset, data, num_elements, MPI_BYTE, MPI_STATUS_IGNORE);
-            MPI_File_sync(fh);
-            MPI_File_close(&fh);
-        }
 
         uint32_t min_size = 0;
         std::vector<std::string> level_files;

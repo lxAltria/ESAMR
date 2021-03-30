@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "RefactorUtils.hpp"
 #include <mpi.h>
+#include <adios2.h>
 
 namespace MDR {
     // Data retriever for files
@@ -42,6 +43,9 @@ namespace MDR {
             int rank, size;
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
             MPI_Comm_size(MPI_COMM_WORLD, &size);
+            adios2::ADIOS ad(MPI_COMM_WORLD);
+            adios2::IO readIO = ad.DeclareIO("ReadPrecisionSegments");
+
             std::vector<std::vector<const uint8_t*>> level_components;
             release();
             uint32_t retrieve_size = 0;
@@ -56,8 +60,17 @@ namespace MDR {
                     // fread(buffer, sizeof(uint8_t), level_segment_size[i][segment_offsets[i]], file);
                     // fclose(file);
                     std::string filename = level_files[i] + "_" + std::to_string(segment_offsets[i]);
-                    MPIIO_read(MPI_COMM_WORLD, rank, size, level_segment_size[i][segment_offsets[i]], buffer, filename);
+                    // MPIIO_read(MPI_COMM_WORLD, rank, size, level_segment_size[i][segment_offsets[i]], buffer, filename);
+                    {
+                        adios2::Variable<uint8_t> bp_fdata = readIO.SetSelection(adios2::Box<adios2::Dims>({level_segment_size[i][segment_offsets[i]] * rank}, {level_segment_size[i][segment_offsets[i]]}));
+                        reader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
+                        // Engine derived class, spawned to start IO operations //
+                        // printf("write...%s\n", filename);
+                        adios2::Engine bpFileReader = reader_io.Open(filename, adios2::Mode::Read);
+                        bpFileReader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
+                        bpFileWriter.Close();
 
+                    }
                     concated_level_components.push_back(buffer);
                     // interleave level component
                     const uint8_t * pos = buffer;
@@ -113,16 +126,6 @@ namespace MDR {
             std::cout << "Merged file retriever." << std::endl;
         }
     private:
-        inline void MPIIO_read(MPI_Comm comm, const int rank, const int size, uint32_t num_elements, uint8_t * data, const std::string filename) const {
-            size_t offset = (size - 1 - rank) * num_elements * sizeof(uint8_t);
-            MPI_Barrier(comm);
-            MPI_File fh;
-            MPI_File_open(comm, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-            MPI_File_read_at(fh, offset, data, num_elements, MPI_BYTE, MPI_STATUS_IGNORE);
-            MPI_File_close(&fh);
-            MPI_Barrier(comm);
-        }
-
         std::vector<std::string> level_files;
         std::string metadata_file;
         std::vector<uint32_t> bitplane_offsets; // tracking the next bitplane index for each level
