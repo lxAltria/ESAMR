@@ -4,6 +4,7 @@
 #include "WriterInterface.hpp"
 #include <cstdio>
 #include <mpi.h>
+#include <adios2.h>
 
 namespace MDR {
     // A writer that writes the concatenated level components
@@ -46,14 +47,14 @@ namespace MDR {
                         std::string filename = level_files[i] + "_" + std::to_string(count);
                         // MPIIO_write(MPI_COMM_WORLD, rank, size, concated_level_size, concated_level_data, filename);
                         {
-                            adios2::Variable<Type> bp_fdata = bpIO.DefineVariable<Type>(
+                            adios2::Variable<uint8_t> bp_fdata = bpIO.DefineVariable<uint8_t>(
                                   filename, {concated_level_size * size}, {concated_level_size * rank}, {concated_level_size}, adios2::ConstantDims);
                             // Engine derived class, spawned to start IO operations //
                             // printf("write...%s\n", filename);
                             adios2::Engine bpFileWriter = bpIO.Open(filename, adios2::Mode::Write);
-                            bpFileWriter.Put<Type>(bp_fdata, concated_level_data);
+                            bpFileWriter.Put<uint8_t>(bp_fdata, concated_level_data);
                             bpFileWriter.Close();
-                            std::cout << "processor " << rank << " finish FileWriter_ad\n";                            
+                            //std::cout << "processor " << rank << " finish FileWriter_ad\n";                            
                         }
                         free(concated_level_data);
                         count ++;
@@ -87,7 +88,6 @@ namespace MDR {
             MPI_File_close(&fh);
         }
 
-        adios2::ADIOS ad;
         uint32_t min_size = 0;
         std::vector<std::string> level_files;
         std::string metadata_file;
