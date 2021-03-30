@@ -34,12 +34,14 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
 }
 
 template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorEstimator, class SizeInterpreter, class Retriever>
-void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
+void test(string filename, vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
     auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
     // cout << "loading metadata" << endl;
     double time = 0;
     int rank;
+    int size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0){
         time = - MPI_Wtime();
@@ -52,6 +54,19 @@ void test(string filename, const vector<double>& tolerance, Decomposer decompose
     }    
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
+    // change tolerance to PSNR
+    {
+        T max_val = data[0];
+        T min_val = data[0];
+        for(int i=0; i<data.size(); i++){
+            if(max_val < data[i]) max_val = data[i];
+            if(min_val > data[i]) min_val = data[i];
+        }
+        T value_range = max_val - min_val;
+        for(int i=0; i<tolerance.size(); i++){
+            tolerance[i] = (value_range / pow(10, tolerance[i]/20))*(value_range / pow(10, tolerance[i]/20)) * data.size() * size;        
+        }
+    }
     evaluate(data, tolerance, reconstructor);
 }
 
