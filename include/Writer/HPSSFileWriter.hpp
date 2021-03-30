@@ -16,6 +16,8 @@ namespace MDR {
             int rank, size;
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
             MPI_Comm_size(MPI_COMM_WORLD, &size);
+            adios2::ADIOS ad(MPI_COMM_WORLD);
+            adios2::IO bpIO = ad.DeclareIO("WritePrecisionSegments");
 
             std::vector<std::vector<uint32_t>> level_merged_count;
             for(int i=0; i<level_components.size(); i++){
@@ -42,7 +44,17 @@ namespace MDR {
                         // fclose(file);
                         // MPI_IO
                         std::string filename = level_files[i] + "_" + std::to_string(count);
-                        MPIIO_write(MPI_COMM_WORLD, rank, size, concated_level_size, concated_level_data, filename);
+                        // MPIIO_write(MPI_COMM_WORLD, rank, size, concated_level_size, concated_level_data, filename);
+                        {
+                            adios2::Variable<Type> bp_fdata = bpIO.DefineVariable<Type>(
+                                  filename, {concated_level_size * size}, {concated_level_size * rank}, {concated_level_size}, adios2::ConstantDims);
+                            // Engine derived class, spawned to start IO operations //
+                            // printf("write...%s\n", filename);
+                            adios2::Engine bpFileWriter = bpIO.Open(filename, adios2::Mode::Write);
+                            bpFileWriter.Put<Type>(bp_fdata, concated_level_data);
+                            bpFileWriter.Close();
+                            std::cout << "processor " << rank << " finish FileWriter_ad\n";                            
+                        }
                         free(concated_level_data);
                         count ++;
                         concated_level_size = 0;
@@ -66,19 +78,16 @@ namespace MDR {
             std::cout << "HPSS file writer." << std::endl;
         }
     private:
-        inline void MPIIO_write(MPI_Comm comm, const int rank, const int size, uint32_t num_elements, uint8_t * data, const std::string filename) const {
+        inline void MPIIO_write(MPI_Comm comm, const int rank, const int size, uint32_t num_elements, uint8_t * data, const std::string& filename) const {
             size_t offset = rank * num_elements * sizeof(unsigned char);
-            MPI_Barrier(MPI_COMM_WORLD);
             MPI_File fh;
             MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
             MPI_File_write_at(fh, offset, data, num_elements, MPI_BYTE, MPI_STATUS_IGNORE);
             MPI_File_sync(fh);
             MPI_File_close(&fh);
-            MPI_Barrier(MPI_COMM_WORLD);
         }
 
-
-
+        adios2::ADIOS ad;
         uint32_t min_size = 0;
         std::vector<std::string> level_files;
         std::string metadata_file;
