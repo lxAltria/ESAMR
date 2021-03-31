@@ -31,6 +31,10 @@ namespace MDR {
                         size += level_sizes[i][bitplane_index + k];
                     }
                     bitplane_index += level_merged_count[i][j];
+                    if(size > (1ULL << 32)){
+                        std::cerr << "Size exceed 32 bit range\n";
+                        exit(-1);
+                    }
                     segment_size.push_back(size);
                     segment_error.push_back(level_squared_errors[i][bitplane_index]);
                 }
@@ -48,7 +52,7 @@ namespace MDR {
 
             std::vector<std::vector<const uint8_t*>> level_components;
             release();
-            uint64_t retrieve_size = 0;
+            uint32_t retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
                 // std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
                 std::vector<const uint8_t*> interleaved_level;
@@ -67,7 +71,7 @@ namespace MDR {
                         adios2::Engine bpFileReader = readIO.Open(filename, adios2::Mode::Read);
                         adios2::Variable<uint8_t> bp_fdata = readIO.InquireVariable<uint8_t>(filename);
                         uint64_t start = level_segment_size[i][segment_offsets[i]] * rank;
-                        uint64_t size = level_segment_size[i][segment_offsets[i]]
+                        uint64_t size = level_segment_size[i][segment_offsets[i]];
                         bp_fdata.SetSelection(adios2::Box<adios2::Dims>({start}, {size}));
                         bpFileReader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
                         bpFileReader.Close();
@@ -85,7 +89,7 @@ namespace MDR {
                 }
                 level_components.push_back(interleaved_level);
             }
-            uint64_t total_retrieve_size = 0;
+            uint32_t total_retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
                 for(int j=0; j<level_num_bitplanes[i]; j++){
                     total_retrieve_size += level_segment_size[i][j];
@@ -134,7 +138,7 @@ namespace MDR {
         std::vector<uint8_t*> concated_level_components;
 
         std::vector<std::vector<uint32_t>> segment_bitplane_count;
-        std::vector<std::vector<uint64_t>> level_segment_size;
+        std::vector<std::vector<uint32_t>> level_segment_size;
         std::vector<std::vector<double>> level_segment_error;
     };
 }
