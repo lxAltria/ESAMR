@@ -21,12 +21,12 @@ namespace MDR {
             level_segment_size.clear();
             level_segment_error.clear();
             for(int i=0; i<level_sizes.size(); i++){
-                std::vector<uint32_t> segment_size;
+                std::vector<uint64_t> segment_size;
                 std::vector<double> segment_error;
                 segment_error.push_back(level_squared_errors[i][0]);
                 uint32_t bitplane_index = 0;
                 for(int j=0; j<level_merged_count[i].size(); j++){
-                    uint32_t size = 0;                    
+                    uint64_t size = 0;                    
                     for(int k=0; k<level_merged_count[i][j]; k++){
                         size += level_sizes[i][bitplane_index + k];
                     }
@@ -48,7 +48,7 @@ namespace MDR {
 
             std::vector<std::vector<const uint8_t*>> level_components;
             release();
-            uint32_t retrieve_size = 0;
+            uint64_t retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
                 // std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
                 std::vector<const uint8_t*> interleaved_level;
@@ -62,54 +62,13 @@ namespace MDR {
                     std::string filename = level_files[i] + "_" + std::to_string(segment_offsets[i]);
                     // MPIIO_read(MPI_COMM_WORLD, rank, size, level_segment_size[i][segment_offsets[i]], buffer, filename);
                     {
-			//adios2::IO readIO = ad.DeclareIO(filename);
-			MPI_Barrier(MPI_COMM_WORLD);
+            			//adios2::IO readIO = ad.DeclareIO(filename);
+            			MPI_Barrier(MPI_COMM_WORLD);
                         adios2::Engine bpFileReader = readIO.Open(filename, adios2::Mode::Read);
-			if(bpFileReader){
-				if(!rank){
-					const std::map<std::string, adios2::Params> variables =
-            				readIO.AvailableVariables();
-        				for (const auto variablePair : variables)
-        				{
-            					std::cout << "Name: " << variablePair.first;
-
-            					for (const auto &parameter : variablePair.second)
-            					{
-                					std::cout << "\t" << parameter.first << ": " << parameter.second << "\n";
-            					}
-        				}
-
-				}
-			}
-			else{
-				std::cout << "open file failed\n";
-				std::cout << rank << " " << size << std::endl;
-				MPI_Abort(MPI_COMM_WORLD, -1);
-			}
-
                         adios2::Variable<uint8_t> bp_fdata = readIO.InquireVariable<uint8_t>(filename);
-			if(bp_fdata){
-				std::cout << filename << "_found in rank " << rank << "\n";
-				fflush(stdout);
-			}
-			else{
-				std::cout << filename << "_not_found in rank " << rank << std::endl;
-				fflush(stdout);
-					const std::map<std::string, adios2::Params> variables =
-                                        readIO.AvailableVariables();
-                                        for (const auto variablePair : variables)
-                                        {
-                                                std::cout << "Name: " << variablePair.first;
-
-                                                for (const auto &parameter : variablePair.second)
-                                                {
-                                                        std::cout << "\t" << parameter.first << ": " << parameter.second << "\n";
-                                                }
-                                        }
-				std::cout << "list of existing variables done\n";
-				MPI_Abort(MPI_COMM_WORLD, 0);
-			}
-                        bp_fdata.SetSelection(adios2::Box<adios2::Dims>({level_segment_size[i][segment_offsets[i]] * rank}, {level_segment_size[i][segment_offsets[i]]}));
+                        uint64_t start = level_segment_size[i][segment_offsets[i]] * rank;
+                        uint64_t size = level_segment_size[i][segment_offsets[i]]
+                        bp_fdata.SetSelection(adios2::Box<adios2::Dims>({start}, {size}));
                         bpFileReader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
                         bpFileReader.Close();
                     }
@@ -126,7 +85,7 @@ namespace MDR {
                 }
                 level_components.push_back(interleaved_level);
             }
-            uint32_t total_retrieve_size = 0;
+            uint64_t total_retrieve_size = 0;
             for(int i=0; i<level_files.size(); i++){
                 for(int j=0; j<level_num_bitplanes[i]; j++){
                     total_retrieve_size += level_segment_size[i][j];
@@ -175,7 +134,7 @@ namespace MDR {
         std::vector<uint8_t*> concated_level_components;
 
         std::vector<std::vector<uint32_t>> segment_bitplane_count;
-        std::vector<std::vector<uint32_t>> level_segment_size;
+        std::vector<std::vector<uint64_t>> level_segment_size;
         std::vector<std::vector<double>> level_segment_error;
     };
 }
