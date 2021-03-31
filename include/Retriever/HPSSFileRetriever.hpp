@@ -21,7 +21,7 @@ namespace MDR {
             level_segment_size.clear();
             level_segment_error.clear();
             for(int i=0; i<level_sizes.size(); i++){
-                std::vector<uint64_t> segment_size;
+                std::vector<uint32_t> segment_size;
                 std::vector<double> segment_error;
                 segment_error.push_back(level_squared_errors[i][0]);
                 uint32_t bitplane_index = 0;
