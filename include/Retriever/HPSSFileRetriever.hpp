@@ -26,11 +26,15 @@ namespace MDR {
                 segment_error.push_back(level_squared_errors[i][0]);
                 uint32_t bitplane_index = 0;
                 for(int j=0; j<level_merged_count[i].size(); j++){
-                    uint32_t size = 0;                    
+                    uint64_t size = 0;                    
                     for(int k=0; k<level_merged_count[i][j]; k++){
                         size += level_sizes[i][bitplane_index + k];
                     }
                     bitplane_index += level_merged_count[i][j];
+                    if(size > (1ULL << 32)){
+                        std::cerr << "Size exceed 32 bit range\n";
+                        exit(-1);
+                    }
                     segment_size.push_back(size);
                     segment_error.push_back(level_squared_errors[i][bitplane_index]);
                 }
@@ -62,8 +66,8 @@ namespace MDR {
                     std::string filename = level_files[i] + "_" + std::to_string(segment_offsets[i]);
                     // MPIIO_read(MPI_COMM_WORLD, rank, size, level_segment_size[i][segment_offsets[i]], buffer, filename);
                     {
-			//adios2::IO readIO = ad.DeclareIO(filename);
-			MPI_Barrier(MPI_COMM_WORLD);
+            			//adios2::IO readIO = ad.DeclareIO(filename);
+            			MPI_Barrier(MPI_COMM_WORLD);
                         adios2::Engine bpFileReader = readIO.Open(filename, adios2::Mode::Read);
 			/*
 			if(bpFileReader){
