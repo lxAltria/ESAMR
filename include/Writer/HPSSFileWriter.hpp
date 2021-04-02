@@ -49,8 +49,6 @@ namespace MDR {
                         {
                             adios2::Variable<uint8_t> bp_fdata = bpIO.DefineVariable<uint8_t>(
                                   filename, {(uint64_t)concated_level_size * size}, {(uint64_t)concated_level_size * rank}, {(uint64_t)concated_level_size}, adios2::ConstantDims);
-                            adios2::Variable<uint8_t> bp_fdata = bpIO.DefineVariable<uint8_t>(filename, {concated_level_size * size}, {concated_level_size * rank}, {concated_level_size}, adios2::ConstantDims);
-                            // Engine derived class, spawned to start IO operations //
                             adios2::Engine bpFileWriter = bpIO.Open(filename, adios2::Mode::Write);
                             bpFileWriter.Put<uint8_t>(bp_fdata, concated_level_data);
                             bpFileWriter.Close();
