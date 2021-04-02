@@ -8,6 +8,7 @@ set (MGARDx_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/external/MGARDx/install/includ
 
 find_package(MPI REQUIRED)
 # include_directories(${MPI_INCLUDE_PATH})
+find_package(ADIOS2)
 
 find_library(ZSTD_LIB zstd HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ/install/lib")
 find_library(SZ3_LIB SZ3 HINTS "${CMAKE_CURRENT_SOURCE_DIR}/external/SZ3/build/src")
@@ -18,3 +19,5 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
 add_subdirectory (test)
+#add_subdirectory (others)
+

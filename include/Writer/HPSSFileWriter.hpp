@@ -48,7 +48,7 @@ namespace MDR {
                         // MPIIO_write(MPI_COMM_WORLD, rank, size, concated_level_size, concated_level_data, filename);
                         {
                             adios2::Variable<uint8_t> bp_fdata = bpIO.DefineVariable<uint8_t>(
-                                  filename, {concated_level_size * size}, {concated_level_size * rank}, {concated_level_size}, adios2::ConstantDims);
+                                  filename, {(uint64_t)concated_level_size * size}, {(uint64_t)concated_level_size * rank}, {(uint64_t)concated_level_size}, adios2::ConstantDims);
                             // Engine derived class, spawned to start IO operations //
                             // printf("write...%s\n", filename);
                             adios2::Engine bpFileWriter = bpIO.Open(filename, adios2::Mode::Write);
@@ -64,6 +64,7 @@ namespace MDR {
                 }
                 level_merged_count.push_back(merged_count);
             }
+	    /*
 	if(!rank){
         const std::map<std::string, adios2::Params> variables =
             bpIO.AvailableVariables();
@@ -79,8 +80,7 @@ namespace MDR {
             }
         }
 	}
-
-
+	*/
             return level_merged_count;
         }
 
