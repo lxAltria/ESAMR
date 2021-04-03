@@ -225,12 +225,12 @@ namespace MDR {
     private:
         inline ConsecutiveUnitErrorGain estimated_efficiency(double accumulated_error, int index, int level, const std::vector<double>& bitplane_errors, const std::vector<uint32_t>& bitplane_sizes) const {
             double current_error_gain = error_estimator.estimate_error_gain(accumulated_error, bitplane_errors[index], bitplane_errors[index + 1], level);
-            uint32_t current_size = bitplane_sizes[index + 1];
+            uint32_t current_size = bitplane_sizes[index];
             double current_efficiency = current_error_gain / current_size;
             int consecutive_num = 1;
             for(int i=2; i<bitplane_sizes.size() - index; i++){
                 double next_error_gain = error_estimator.estimate_error_gain(accumulated_error, bitplane_errors[index], bitplane_errors[index + i], level);             
-                uint32_t next_size = current_size + bitplane_sizes[index + i];
+                uint32_t next_size = current_size + bitplane_sizes[index + i - 1];
                 double next_efficiency = next_error_gain / next_size;
                 if((current_efficiency > 0) && (current_efficiency > next_efficiency)){
                     break;
