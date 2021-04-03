@@ -7,49 +7,9 @@
 #include <bitset>
 #include "utils.hpp"
 #include "Reconstructor/Reconstructor.hpp"
+#include "evaluate.hpp"
 
 using namespace std;
-
-template <class T>
-vector<T> compute_average(const T * data, size_t n1, size_t n2, size_t n3, int block_size){
-    size_t dim0_offset = n2 * n3;
-    size_t dim1_offset = n3;
-    size_t num_block_1 = (n1 - 1) / block_size + 1;
-    size_t num_block_2 = (n2 - 1) / block_size + 1;
-    size_t num_block_3 = (n3 - 1) / block_size + 1;
-    vector<T> aggregated = vector<T>();
-    size_t index = 0;
-    const T * data_x_pos = data;
-    for(int i=0; i<num_block_1; i++){
-        int size_1 = (i == num_block_1 - 1) ? n1 - i * block_size : block_size;
-        const T * data_y_pos = data_x_pos;
-        for(int j=0; j<num_block_2; j++){
-            int size_2 = (j == num_block_2 - 1) ? n2 - j * block_size : block_size;
-            const T * data_z_pos = data_y_pos;
-            for(int k=0; k<num_block_3; k++){
-                int size_3 = (k == num_block_3 - 1) ? n3 - k * block_size : block_size;
-                const T * cur_data_pos = data_z_pos;
-                int n_block_elements = size_1 * size_2 * size_3;
-                double sum = 0;
-                for(int ii=0; ii<size_1; ii++){
-                    for(int jj=0; jj<size_2; jj++){
-                        for(int kk=0; kk<size_3; kk++){
-                            sum += *cur_data_pos;
-                            cur_data_pos ++;
-                        }
-                        cur_data_pos += dim1_offset - size_3;
-                    }
-                    cur_data_pos += dim0_offset - size_2 * dim1_offset;
-                }
-                aggregated.push_back(sum / n_block_elements);
-                data_z_pos += size_3;
-            }
-            data_y_pos += dim1_offset * size_2;
-        }
-        data_x_pos += dim0_offset * size_1;
-    }    
-    return aggregated;
-}
 
 template <class T>
 void compare(const vector<T>& v1, const vector<T>& v2){
@@ -70,7 +30,6 @@ template <class T, class Reconstructor>
 void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstructor reconstructor){
     struct timespec start, end;
     int err = 0;
-    auto dims = reconstructor.get_dimensions();
     // auto a1 = compute_average(data.data(), dims[0], dims[1], dims[2], 3);
     // auto a12 = compute_average(data.data(), dims[0], dims[1], dims[2], 5);
     for(int i=0; i<tolerance.size(); i++){
@@ -79,14 +38,12 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         auto reconstructed_data = reconstructor.progressive_reconstruct(tolerance[i]);
         err = clock_gettime(CLOCK_REALTIME, &end);
         cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
+        auto dims = reconstructor.get_current_dimensions();
+        std::cout << dims.size() << " " << dims[0] << " " << dims[1] << " " << dims[2] << std::endl;
         // TODO: add full resolution check
-        MGARD::print_statistics(data.data(), reconstructed_data, data.size());
-        // auto a2 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 3);
-        // cout << "Average: ";
-        // compare(a1, a2);
-        // auto a22 = compute_average(reconstructed_data, dims[0], dims[1], dims[2], 5);
-        // cout << "Average2: ";
-        // compare(a12, a22);
+        if(data.size() == dims[0] * dims[1] * dims[2]) MGARD::print_statistics(data.data(), reconstructed_data, data.size());
+        // COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
+        // COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 0);
     }
 }
 

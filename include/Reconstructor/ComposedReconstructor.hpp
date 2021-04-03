@@ -53,18 +53,17 @@ namespace MDR {
             level_components = retriever.retrieve_level_components(level_sizes, retrieve_sizes, prev_level_num_bitplanes, level_num_bitplanes);
             // check whether to reconstruct to full resolution
             int skipped_level = 0;
+            // uncomment to enable multi resolution
             for(int i=0; i<=target_level; i++){
                 if(level_num_bitplanes[target_level - i] != 0){
                     skipped_level = i;
                     break;
                 }
             }
-            // TODO: uncomment skip level to reconstruct low resolution data
-            // target_level -= skipped_level;
             timer.end();
             timer.print("Interpret and retrieval");
 
-            bool success = reconstruct(target_level, prev_level_num_bitplanes);
+            bool success = reconstruct(target_level, prev_level_num_bitplanes, skipped_level);
             retriever.release();
             if(success) return data.data();
             else{
@@ -76,18 +75,29 @@ namespace MDR {
         // reconstruct progressively based on available data
         T * progressive_reconstruct(double tolerance){
             std::vector<T> cur_data(data);
+            auto prev_level = current_level;
+            auto prev_dims(current_dimensions);
             reconstruct(tolerance);
             // TODO: add resolution changes
-            if(cur_data.size() == data.size()){
+            if(prev_level == current_level){
                 for(int i=0; i<data.size(); i++){
                     data[i] += cur_data[i];
                 }                
             }
             else if(cur_data.size()){
-                std::cerr << "Reconstruct size changes, not supported yet." << std::endl;
-                std::cerr << "Sizes before reconstruction: " << cur_data.size() << std::endl;
-                std::cerr << "Sizes after reconstruction: " << data.size() << std::endl;
-                exit(0);
+                // adjust to dimension change
+                std::vector<T> interpolated_data(data.size(), 0);
+                for(int i=0; i<prev_dims[0]; i++){
+                    for(int j=0; j<prev_dims[1]; j++){
+                        for(int k=0; k<prev_dims[2]; k++){
+                            interpolated_data[i * current_dimensions[1] * current_dimensions[2] + j * current_dimensions[2] + k] = cur_data[i * prev_dims[1] * prev_dims[2] + j * prev_dims[2] + k];
+                        }
+                    }
+                }
+                decomposer.recompose(interpolated_data.data(), current_dimensions, current_level - prev_level);
+                for(int i=0; i<data.size(); i++){
+                    data[i] += interpolated_data[i];
+                }
             }
             return data.data();
         }
@@ -111,6 +121,10 @@ namespace MDR {
             return dimensions;
         }
 
+        const std::vector<uint32_t>& get_current_dimensions(){
+            return current_dimensions;
+        }
+
         ~ComposedReconstructor(){}
 
         void print() const {
@@ -122,11 +136,12 @@ namespace MDR {
             std::cout << "Retriever: "; retriever.print();
         }
     private:
-        bool reconstruct(uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, bool progressive=true){
+        bool reconstruct(uint8_t target_level, const std::vector<uint8_t>& prev_level_num_bitplanes, int skipped_level=0, bool progressive=true){
             Timer timer;
             timer.start();
+            int reconstruct_level = target_level - skipped_level;
             auto level_dims = compute_level_dims(dimensions, target_level);
-            auto reconstruct_dimensions = level_dims[target_level];
+            auto reconstruct_dimensions = level_dims[reconstruct_level];
             uint32_t num_elements = 1;
             for(const auto& dim:reconstruct_dimensions){
                 num_elements *= dim;
@@ -137,8 +152,11 @@ namespace MDR {
             timer.print("Reconstruct Preprocessing");            
 
             auto level_elements = compute_level_elements(level_dims, target_level);
+            std::cout << "reconstruct_level = " << reconstruct_level << std::endl;
+            std::cout << "reconstruct_dimensions = " << reconstruct_dimensions[0] << " " << reconstruct_dimensions[1] << " " << reconstruct_dimensions[2] << std::endl;
+            current_dimensions = reconstruct_dimensions;
             std::vector<uint32_t> dims_dummy(reconstruct_dimensions.size(), 0);
-            for(int i=0; i<=target_level; i++){
+            for(int i=0; i<=reconstruct_level; i++){
                 timer.start();
                 compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], stopping_indices[i]);
                 timer.end();
@@ -159,9 +177,10 @@ namespace MDR {
                 timer.print("Reposition");            
             }
             timer.start();
-            decomposer.recompose(data.data(), reconstruct_dimensions, target_level);
+            decomposer.recompose(data.data(), reconstruct_dimensions, reconstruct_level);
             timer.end();
-            timer.print("Recomposing");            
+            timer.print("Recomposing");
+            current_level = reconstruct_level;
             return true;
         }
 
@@ -173,6 +192,8 @@ namespace MDR {
         Compressor compressor;
         std::vector<T> data;
         std::vector<uint32_t> dimensions;
+        std::vector<uint32_t> current_dimensions;
+        uint8_t current_level = 0;
         std::vector<T> level_error_bounds;
         std::vector<uint8_t> level_num_bitplanes;
         std::vector<uint8_t> stopping_indices;
