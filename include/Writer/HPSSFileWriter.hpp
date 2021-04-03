@@ -19,6 +19,7 @@ namespace MDR {
             MPI_Comm_size(MPI_COMM_WORLD, &size);
             adios2::ADIOS ad(MPI_COMM_WORLD);
             adios2::IO bpIO = ad.DeclareIO("WritePrecisionSegments");
+	    int min_size = 1024 * 1024;
 
             std::vector<std::vector<uint32_t>> level_merged_count;
             for(int i=0; i<level_components.size(); i++){
@@ -40,19 +41,13 @@ namespace MDR {
                             memcpy(concated_level_data_pos, level_components[i][k], level_sizes[i][k]);
                             concated_level_data_pos += level_sizes[i][k];
                         }
-                        // FILE * file = fopen((level_files[i] + "_" + std::to_string(count)).c_str(), "w");
-                        // fwrite(concated_level_data, 1, concated_level_size, file);
-                        // fclose(file);
-                        // MPI_IO
                         std::string filename = level_files[i] + "_" + std::to_string(count);
-                        // MPIIO_write(MPI_COMM_WORLD, rank, size, concated_level_size, concated_level_data, filename);
                         {
                             adios2::Variable<uint8_t> bp_fdata = bpIO.DefineVariable<uint8_t>(
                                   filename, {(uint64_t)concated_level_size * size}, {(uint64_t)concated_level_size * rank}, {(uint64_t)concated_level_size}, adios2::ConstantDims);
                             adios2::Engine bpFileWriter = bpIO.Open(filename, adios2::Mode::Write);
                             bpFileWriter.Put<uint8_t>(bp_fdata, concated_level_data);
                             bpFileWriter.Close();
-                            //std::cout << "processor " << rank << " finish FileWriter_ad\n";                            
                         }
                         free(concated_level_data);
                         count ++;
@@ -62,23 +57,6 @@ namespace MDR {
                 }
                 level_merged_count.push_back(merged_count);
             }
-	    /*
-	if(!rank){
-        const std::map<std::string, adios2::Params> variables =
-            bpIO.AvailableVariables();
-
-        for (const auto variablePair : variables)
-        {
-            std::cout << "Name: " << variablePair.first;
-
-            for (const auto &parameter : variablePair.second)
-            {
-                std::cout << "\t" << parameter.first << ": " << parameter.second
-                          << "\n";
-            }
-        }
-	}
-	*/
             return level_merged_count;
         }
 

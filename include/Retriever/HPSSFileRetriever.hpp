@@ -93,7 +93,7 @@ namespace MDR {
 			}
 			*/
                         adios2::Variable<uint8_t> bp_fdata = readIO.InquireVariable<uint8_t>(filename);
-			/*
+			
 			if(bp_fdata){
 				std::cout << filename << "_found in rank " << rank << "\n";
 				fflush(stdout);
@@ -115,7 +115,7 @@ namespace MDR {
 				std::cout << "list of existing variables done\n";
 				MPI_Abort(MPI_COMM_WORLD, 0);
 			}
-			*/
+			
                         bp_fdata.SetSelection(adios2::Box<adios2::Dims>({(uint64_t)level_segment_size[i][segment_offsets[i]] * rank}, {(uint64_t)level_segment_size[i][segment_offsets[i]]}));
                         bpFileReader.Get<uint8_t>(bp_fdata, buffer, adios2::Mode::Sync);
                         bpFileReader.Close();
