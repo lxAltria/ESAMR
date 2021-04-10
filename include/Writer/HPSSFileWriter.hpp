@@ -19,7 +19,7 @@ namespace MDR {
             MPI_Comm_size(MPI_COMM_WORLD, &size);
             adios2::ADIOS ad(MPI_COMM_WORLD);
             adios2::IO bpIO = ad.DeclareIO("WritePrecisionSegments");
-	    int min_size = 512 * 512 * 4;
+	    int min_size = 1;
 
             std::vector<std::vector<uint32_t>> level_merged_count;
             for(int i=0; i<level_components.size(); i++){

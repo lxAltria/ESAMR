@@ -11,7 +11,7 @@ git reset --hard f48d2f27a5470a28e900db9b46bb3344a2bc211f
 mkdir -p build
 mkdir -p install
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=${external_dir}/SZ/install ..
+cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=${external_dir}/SZ/install ..
 make -j 8
 make install
 
@@ -30,17 +30,22 @@ make -j 8
 cd ${external_dir}
 git clone https://github.com/lxAltria/MGARDx.git
 cd MGARDx
-git set --hard 28d738c3a533db1943bfef7717587a7ac4c93b5f
+git reset --hard 28d738c3a533db1943bfef7717587a7ac4c93b5f
 mkdir -p build
 mkdir -p install
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=${external_dir}/MGARDx/install ..
+cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=${external_dir}/MGARDx/install ..
 make -j 8
 make install
 
+# clone eva
+cd ${external_dir}
+git clone https://github.com/lxAltria/compression_utils.git
+
 # build MDR
 cd ${source_dir}
+git checkout hpss
 mkdir -p build
 cd build
-cmake ..
+cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
 make -j 8

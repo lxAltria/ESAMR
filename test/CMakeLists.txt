@@ -1,4 +1,4 @@
-set (EVA_INCLUDES "/Users/xin/github/compression_utils/include")
+set (EVA_INCLUDES "../external/compression_utils/include")
 
 add_executable (test_encoder test_encoder.cpp)
 target_include_directories(test_encoder PRIVATE ${MGARDx_INCLUDES} ${SZ3_INCLUDES} ${ZSTD_INCLUDES})
