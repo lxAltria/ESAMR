@@ -27,6 +27,7 @@ namespace MDR {
                     std::cerr << num_dims << "-Dimentional error estimation not implemented." << std::endl;
                     exit(-1);
             }
+	    c *= 4; // 2 more bitplane for negabinary
         }
         MaxErrorEstimatorOB() : MaxErrorEstimatorOB(1) {}
 
