@@ -1,0 +1,359 @@
+LS_COLORS=rs=0:di=38;5;33:ln=38;5;51:mh=00:pi=40;38;5;11:so=38;5;13:do=38;5;5:bd=48;5;232;38;5;11:cd=48;5;232;38;5;3:or=48;5;232;38;5;9:mi=01;05;37;41:su=48;5;196;38;5;15:sg=48;5;11;38;5;16:ca=48;5;196;38;5;226:tw=48;5;10;38;5;16:ow=48;5;10;38;5;21:st=48;5;21;38;5;15:ex=38;5;40:*.tar=38;5;9:*.tgz=38;5;9:*.arc=38;5;9:*.arj=38;5;9:*.taz=38;5;9:*.lha=38;5;9:*.lz4=38;5;9:*.lzh=38;5;9:*.lzma=38;5;9:*.tlz=38;5;9:*.txz=38;5;9:*.tzo=38;5;9:*.t7z=38;5;9:*.zip=38;5;9:*.z=38;5;9:*.dz=38;5;9:*.gz=38;5;9:*.lrz=38;5;9:*.lz=38;5;9:*.lzo=38;5;9:*.xz=38;5;9:*.zst=38;5;9:*.tzst=38;5;9:*.bz2=38;5;9:*.bz=38;5;9:*.tbz=38;5;9:*.tbz2=38;5;9:*.tz=38;5;9:*.deb=38;5;9:*.rpm=38;5;9:*.jar=38;5;9:*.war=38;5;9:*.ear=38;5;9:*.sar=38;5;9:*.rar=38;5;9:*.alz=38;5;9:*.ace=38;5;9:*.zoo=38;5;9:*.cpio=38;5;9:*.7z=38;5;9:*.rz=38;5;9:*.cab=38;5;9:*.wim=38;5;9:*.swm=38;5;9:*.dwm=38;5;9:*.esd=38;5;9:*.jpg=38;5;13:*.jpeg=38;5;13:*.mjpg=38;5;13:*.mjpeg=38;5;13:*.gif=38;5;13:*.bmp=38;5;13:*.pbm=38;5;13:*.pgm=38;5;13:*.ppm=38;5;13:*.tga=38;5;13:*.xbm=38;5;13:*.xpm=38;5;13:*.tif=38;5;13:*.tiff=38;5;13:*.png=38;5;13:*.svg=38;5;13:*.svgz=38;5;13:*.mng=38;5;13:*.pcx=38;5;13:*.mov=38;5;13:*.mpg=38;5;13:*.mpeg=38;5;13:*.m2v=38;5;13:*.mkv=38;5;13:*.webm=38;5;13:*.ogm=38;5;13:*.mp4=38;5;13:*.m4v=38;5;13:*.mp4v=38;5;13:*.vob=38;5;13:*.qt=38;5;13:*.nuv=38;5;13:*.wmv=38;5;13:*.asf=38;5;13:*.rm=38;5;13:*.rmvb=38;5;13:*.flc=38;5;13:*.avi=38;5;13:*.fli=38;5;13:*.flv=38;5;13:*.gl=38;5;13:*.dl=38;5;13:*.xcf=38;5;13:*.xwd=38;5;13:*.yuv=38;5;13:*.cgm=38;5;13:*.emf=38;5;13:*.ogv=38;5;13:*.ogx=38;5;13:*.aac=38;5;45:*.au=38;5;45:*.flac=38;5;45:*.m4a=38;5;45:*.mid=38;5;45:*.midi=38;5;45:*.mka=38;5;45:*.mp3=38;5;45:*.mpc=38;5;45:*.ogg=38;5;45:*.ra=38;5;45:*.wav=38;5;45:*.oga=38;5;45:*.opus=38;5;45:*.spx=38;5;45:*.xspf=38;5;45:
+LD_LIBRARY_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/lib64:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib:/sw/andes/gcc/9.3.0/lib64:/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/lib
+SHD_DIR=/gpfs/alpine/csc143/proj-shared/xin
+__LMOD_REF_COUNT_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg/bin:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/bin:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin:1;/sw/andes/gcc/9.3.0/bin:1;/sw/sources/hpss/bin:1;/sw/andes/bin:1;/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/etc:1;/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/bin:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;/opt/puppetlabs/bin:1;/usr/lpp/mmfs/bin:1;/opt/dell/srvadmin/bin:1
+_ModuleTable002_=bXBpLzQuMC40LXNreHFmZWkvZ2NjLzkuMy4wL2FkaW9zMi8yLjYuMC5sdWEiLFsiZnVsbE5hbWUiXT0iYWRpb3MyLzIuNi4wIixbImxvYWRPcmRlciJdPTUscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MCxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iYWRpb3MyIix9LGNtYWtlPXtbImZuIl09Ii9zdy9hbmRlcy9zcGFjay1lbnZzL2Jhc2UvbW9kdWxlcy9zcGFjay9saW51eC1yaGVsOC14ODZfNjQvQ29yZS9jbWFrZS8zLjE4LjQubHVhIixbImZ1bGxOYW1lIl09ImNtYWtlLzMuMTguNCIsWyJsb2FkT3JkZXIiXT02LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImNtYWtlIix9LGdjYz17WyJmbiJdPSIv
+SSH_CONNECTION=67.43.242.225 63898 160.91.202.84 22
+INCLUDE=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include
+__LMOD_REF_COUNT_C_INCLUDE_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include:1
+LMOD_FAMILY_MPI_VERSION=4.0.4
+_=/usr/bin/env
+LANG=en_US.UTF-8
+LMOD_SYSTEM_NAME=andes
+HISTCONTROL=ignoredups
+MEMBERWORK=/gpfs/alpine/scratch/USER
+BINARY_TYPE_HPC=
+LMOD_FAMILY_COMPILER_VERSION=9.3.0
+HOSTNAME=andes-login4
+OLCF_ADIOS2_ROOT=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6
+LMOD_SYSTEM_DEFAULT_MODULES=DefApps
+OLDPWD=/ccs/home/USER/Andes/codes
+__LMOD_REF_COUNT__LMFILES_=/sw/andes/spack-envs/base/modules/site/Core/hsi/5.0.2.p5.lua:1;/sw/andes/modulefiles/core/DefApps.lua:1;/sw/andes/spack-envs/base/modules/site/Core/gcc/9.3.0.lua:1;/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/gcc/9.3.0/openmpi/4.0.4.lua:1;/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/openmpi/4.0.4-skxqfei/gcc/9.3.0/adios2/2.6.0.lua:1;/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/Core/cmake/3.18.4.lua:1
+C_INCLUDE_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include
+GPFS_PROJWORK=/gpfs/alpine/proj-shared
+__LMOD_REF_COUNT_CPLUS_INCLUDE_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include:1
+__LMOD_REF_COUNT_INCLUDE=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include:1
+OLCF_GCC_ROOT=/sw/andes/gcc/9.3.0
+__LMOD_REF_COUNT_LD_LIBRARY_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/lib64:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib:1;/sw/andes/gcc/9.3.0/lib64:1;/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/lib:1
+__LMOD_REF_COUNT_PKG_CONFIG_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib/pkgconfig:1
+LSF_SERVERDIR=/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/etc
+_ModuleTable004_=LWVudnMvYmFzZS9tb2R1bGVzL3NwYWNrL2xpbnV4LXJoZWw4LXg4Nl82NC9nY2MvOS4zLjAvb3Blbm1waS80LjAuNC5sdWEiLFsiZnVsbE5hbWUiXT0ib3Blbm1waS80LjAuNCIsWyJsb2FkT3JkZXIiXT00LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09Im9wZW5tcGkiLH0sfSxtcGF0aEE9eyIvc3cvYW5kZXMvc3BhY2stZW52cy9iYXNlL21vZHVsZXMvc3BhY2svbGludXgtcmhlbDgteDg2XzY0L29wZW5tcGkvNC4wLjQtc2t4cWZlaS9nY2MvOS4zLjAiLCIvc3cvYW5kZXMvc3BhY2stZW52cy9iYXNlL21vZHVsZXMvc3BhY2svbGludXgtcmhlbDgteDg2XzY0L2djYy85LjMuMCIsIi9ldGMvc2NsL21vZHVsZWZpbGVz
+S_COLORS=auto
+LSF_ENVDIR=/opt/ibm/spectrumcomputing/lsf/conf
+MPIF90=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin/mpif90
+XDG_SESSION_ID=761
+USER=USER
+MPICXX=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin/mpic++
+__LMOD_REF_COUNT_MODULEPATH=/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/openmpi/4.0.4-skxqfei/gcc/9.3.0:1;/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/gcc/9.3.0:1;/etc/scl/modulefiles:1;/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/Core:1;/sw/andes/spack-envs/base/modules/site/Core:1;/sw/andes/modulefiles/core:1
+__LMOD_REF_COUNT_LOADEDMODULES=hsi/5.0.2.p5:1;DefApps:1;gcc/9.3.0:1;openmpi/4.0.4:1;adios2/2.6.0:1;cmake/3.18.4:1
+OLCF_FAMILY_MPI_VERSION=4.0.4
+PWD=/ccs/home/USER/Andes/codes/Author-Kit
+OLCF_FAMILY_COMPILER_VERSION=9.3.0
+HOME=/ccs/home/USER
+CMAKE_PREFIX_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs
+SSH_CLIENT=67.43.242.225 63898 22
+LMOD_VERSION=8.2.10
+OLCF_CMAKE_ROOT=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg
+BASH_ENV=/sw/andes/lmod/8.2.10/init/bash
+LMOD_MPI_VERSION=4.0.4-skxqfei
+GPFS_MEMBERWORK=/gpfs/alpine/scratch/USER
+OLCF_FAMILY_MPI=openmpi
+LSF_BINDIR=/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/bin
+GPFS_WORLDWORK=/gpfs/alpine/world-shared
+__LMOD_REF_COUNT_LIBRARY_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/lib64:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib:1
+LIBRARY_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/lib64:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib
+__LMOD_REF_COUNT_CMAKE_PREFIX_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6:1;/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs:1
+LMOD_sys=Linux
+_ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPWZhbHNlLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXtbImNvbXBpbGVyIl09ImdjYyIsWyJtcGkiXT0ib3Blbm1waSIsfSxtVD17RGVmQXBwcz17WyJmbiJdPSIvc3cvYW5kZXMvbW9kdWxlZmlsZXMvY29yZS9EZWZBcHBzLmx1YSIsWyJmdWxsTmFtZSJdPSJEZWZBcHBzIixbImxvYWRPcmRlciJdPTIscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MCxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iRGVmQXBwcyIsfSxhZGlvczI9e1siZm4iXT0iL3N3L2FuZGVzL3NwYWNrLWVudnMvYmFzZS9tb2R1bGVzL3NwYWNrL2xpbnV4LXJoZWw4LXg4Nl82NC9vcGVu
+LOADEDMODULES=hsi/5.0.2.p5:DefApps:gcc/9.3.0:openmpi/4.0.4:adios2/2.6.0:cmake/3.18.4
+__LMOD_REF_COUNT_ACLOCAL_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg/share/aclocal:1
+__LMOD_REF_COUNT_MANPATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/share/man:1;/sw/andes/gcc/9.3.0/share/man:1;/sw/sources/hpss/man:1;/sw/andes/lmod/8.2.10/share/man:1;/opt/ibm/spectrumcomputing/lsf/10.1/man:1;/opt/puppetlabs/puppet/share/man:1
+_ModuleTable003_=c3cvYW5kZXMvc3BhY2stZW52cy9iYXNlL21vZHVsZXMvc2l0ZS9Db3JlL2djYy85LjMuMC5sdWEiLFsiZnVsbE5hbWUiXT0iZ2NjLzkuMy4wIixbImxvYWRPcmRlciJdPTMscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MCxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iZ2NjIix9LGhzaT17WyJmbiJdPSIvc3cvYW5kZXMvc3BhY2stZW52cy9iYXNlL21vZHVsZXMvc2l0ZS9Db3JlL2hzaS81LjAuMi5wNS5sdWEiLFsiZnVsbE5hbWUiXT0iaHNpLzUuMC4yLnA1IixbImxvYWRPcmRlciJdPTEscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iaHNpIix9LG9wZW5tcGk9e1siZm4iXT0iL3N3L2FuZGVzL3NwYWNr
+MPICC=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin/mpicc
+LMOD_ROOT=/sw/andes/lmod
+SSH_TTY=/dev/pts/0
+MAIL=/var/spool/mail/USER
+OLCF_MODULEPATH_ROOT=/sw/andes/modulefiles
+__Init_Default_Modules=1
+PROJ_DIR=/gpfs/alpine/scratch/USER/csc143
+SHELL=/bin/bash
+TERM=xterm-256color
+_ModuleTable_Sz_=5
+LMOD_FAMILY_COMPILER=gcc
+OLCF_LMOD_ROOT=/sw/andes
+PROJWORK=/gpfs/alpine/proj-shared
+SHLVL=2
+MPIF77=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin/mpif77
+ACLOCAL_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg/share/aclocal
+MANPATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/share/man:/sw/andes/gcc/9.3.0/share/man:/sw/sources/hpss/man:/sw/andes/lmod/8.2.10/share/man:/opt/ibm/spectrumcomputing/lsf/10.1/man::/opt/puppetlabs/puppet/share/man
+OMPI_MCA_coll_hcoll_enable=0
+LSF_LIBDIR=/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/lib
+MODULEPATH=/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/openmpi/4.0.4-skxqfei/gcc/9.3.0:/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/gcc/9.3.0:/etc/scl/modulefiles:/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/Core:/sw/andes/spack-envs/base/modules/site/Core:/sw/andes/modulefiles/core
+OLCF_HSI_ROOT=/sw/sources/hpss
+LOGNAME=USER
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/15988/bus
+XDG_RUNTIME_DIR=/run/user/15988
+CPLUS_INCLUDE_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/include:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/include
+MODULEPATH_ROOT=/sw/andes/modulefiles
+LMOD_MPI_NAME=openmpi
+PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-8.3.1/cmake-3.18.4-tbcwclzsor6wcixpg4vcc7wjr43vfwpg/bin:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/adios2-2.6.0-elgj6pgerbgeo4bvohh7rhxtjqfi2pf6/bin:/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/bin:/sw/andes/gcc/9.3.0/bin:/sw/sources/hpss/bin:/sw/andes/bin:/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/etc:/opt/ibm/spectrumcomputing/lsf/10.1/linux3.10-glibc2.17-x86_64/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/puppetlabs/bin:/usr/lpp/mmfs/bin:/opt/dell/srvadmin/bin
+_LMFILES_=/sw/andes/spack-envs/base/modules/site/Core/hsi/5.0.2.p5.lua:/sw/andes/modulefiles/core/DefApps.lua:/sw/andes/spack-envs/base/modules/site/Core/gcc/9.3.0.lua:/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/gcc/9.3.0/openmpi/4.0.4.lua:/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/openmpi/4.0.4-skxqfei/gcc/9.3.0/adios2/2.6.0.lua:/sw/andes/spack-envs/base/modules/spack/linux-rhel8-x86_64/Core/cmake/3.18.4.lua
+OLCF_FAMILY_COMPILER=gcc
+MODULESHOME=/usr/share/Modules
+LMOD_SETTARG_FULL_SUPPORT=no
+PKG_CONFIG_PATH=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs/lib/pkgconfig
+HISTSIZE=1000
+LMOD_PKG=/sw/andes/lmod/8.2.10
+OLCF_OPENMPI_ROOT=/sw/andes/spack-envs/base/opt/linux-rhel8-x86_64/gcc-9.3.0/openmpi-4.0.4-skxqfeiocc5jtuw3y6dwtnxzzqjp5ffs
+LMOD_CMD=/sw/andes/lmod/8.2.10/libexec/lmod
+_ModuleTable005_=IiwiL3N3L2FuZGVzL3NwYWNrLWVudnMvYmFzZS9tb2R1bGVzL3NwYWNrL2xpbnV4LXJoZWw4LXg4Nl82NC9Db3JlIiwiL3N3L2FuZGVzL3NwYWNrLWVudnMvYmFzZS9tb2R1bGVzL3NpdGUvQ29yZSIsIi9zdy9hbmRlcy9tb2R1bGVmaWxlcy9jb3JlIix9LFsic3lzdGVtQmFzZU1QQVRIIl09Ii9zdy9hbmRlcy9zcGFjay1lbnZzL2Jhc2UvbW9kdWxlcy9zcGFjay9saW51eC1yaGVsOC14ODZfNjQvQ29yZTovc3cvYW5kZXMvc3BhY2stZW52cy9iYXNlL21vZHVsZXMvc2l0ZS9Db3JlOi9zdy9hbmRlcy9tb2R1bGVmaWxlcy9jb3JlIix9
+WORLDWORK=/gpfs/alpine/world-shared
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+LMOD_DIR=/sw/andes/lmod/8.2.10/libexec
+LMOD_FAMILY_MPI=openmpi
+OMPI_MCA_btl=^vader,openib,tcp
+BASH_FUNC_module%%=() {  eval $($LMOD_CMD bash "$@") && eval $(${LMOD_SETTARG_CMD:-:} -s sh)
+}
+BASH_FUNC_scl%%=() {  if [ "$1" = "load" -o "$1" = "unload" ]; then
+ eval "module $@";
+ else
+ /usr/bin/scl "$@";
+ fi
+}
+BASH_FUNC_ml%%=() {  eval $($LMOD_DIR/ml_cmd "$@")
+}
+LSB Version:	:core-4.1-amd64:core-4.1-noarch
+Distributor ID:	RedHatEnterprise
+Description:	Red Hat Enterprise Linux release 8.1 (Ootpa)
+Release:	8.1
+Codename:	Ootpa
+Linux andes-login4 4.18.0-147.8.1.el8_1.x86_64 #1 SMP Wed Feb 26 03:08:15 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              32
+On-line CPU(s) list: 0-31
+Thread(s) per core:  1
+Core(s) per socket:  16
+Socket(s):           2
+NUMA node(s):        4
+Vendor ID:           AuthenticAMD
+CPU family:          23
+Model:               49
+Model name:          AMD EPYC 7302 16-Core Processor
+Stepping:            0
+CPU MHz:             2012.120
+BogoMIPS:            5988.77
+Virtualization:      AMD-V
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            512K
+L3 cache:            16384K
+NUMA node0 CPU(s):   0-7
+NUMA node1 CPU(s):   8-15
+NUMA node2 CPU(s):   16-23
+NUMA node3 CPU(s):   24-31
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+MemTotal:       263726420 kB
+MemFree:        227772804 kB
+MemAvailable:   235656944 kB
+Buffers:          447608 kB
+Cached:         10767836 kB
+SwapCached:            0 kB
+Active:          5642800 kB
+Inactive:        5411080 kB
+Active(anon):    1918428 kB
+Inactive(anon):   601844 kB
+Active(file):    3724372 kB
+Inactive(file):  4809236 kB
+Unevictable:    18578852 kB
+Mlocked:        16796308 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                 0 kB
+Writeback:             0 kB
+AnonPages:      18394808 kB
+Mapped:          3089876 kB
+Shmem:            921860 kB
+KReclaimable:    1076320 kB
+Slab:            1791872 kB
+SReclaimable:    1076320 kB
+SUnreclaim:       715552 kB
+KernelStack:       32832 kB
+PageTables:        67468 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    131863208 kB
+Committed_AS:   21806220 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:           0 kB
+VmallocChunk:          0 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:  17625088 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:     4549440 kB
+DirectMap2M:    31735808 kB
+DirectMap1G:    231735296 kB
+NAME  MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+loop0   7:0    0  1.7G  0 loop 
+H/W path        Device  Class          Description
+==================================================
+                        system         Computer
+/0                      bus            Motherboard
+/0/0                    memory         255GiB System memory
+/0/1                    processor      AMD EPYC 7302 16-Core Processor
+/0/2                    processor      AMD EPYC 7302 16-Core Processor
+/0/100                  bridge         Starship/Matisse Root Complex
+/0/100/0.2              generic        Starship/Matisse IOMMU
+/0/100/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/100/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/100/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/100/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/100/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/100/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/100/8.1/0.3          bus            Starship USB 3.0 Host Controller
+/0/100/14               bus            FCH SMBus Controller
+/0/100/14.3             bridge         FCH LPC Bridge
+/0/101                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/102                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/103                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/104                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/105                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/106                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/107                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/108                  bridge         Starship Device 24; Function 0
+/0/109                  bridge         Starship Device 24; Function 1
+/0/10a                  bridge         Starship Device 24; Function 2
+/0/10b                  bridge         Starship Device 24; Function 3
+/0/10c                  bridge         Starship Device 24; Function 4
+/0/10d                  bridge         Starship Device 24; Function 5
+/0/10e                  bridge         Starship Device 24; Function 6
+/0/10f                  bridge         Starship Device 24; Function 7
+/0/110                  bridge         Starship Device 24; Function 0
+/0/111                  bridge         Starship Device 24; Function 1
+/0/112                  bridge         Starship Device 24; Function 2
+/0/113                  bridge         Starship Device 24; Function 3
+/0/114                  bridge         Starship Device 24; Function 4
+/0/115                  bridge         Starship Device 24; Function 5
+/0/116                  bridge         Starship Device 24; Function 6
+/0/117                  bridge         Starship Device 24; Function 7
+/0/118                  bridge         Starship/Matisse Root Complex
+/0/118/0.2              generic        Starship/Matisse IOMMU
+/0/118/3.1              bridge         Starship/Matisse GPP Bridge
+/0/118/3.1/0    ib0     network        MT28908 Family [ConnectX-6]
+/0/118/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/118/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/118/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/118/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/118/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/118/8.1/0.1          generic        Starship/Matisse Cryptographic Coprocessor PSPCPP
+/0/118/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/118/8.1/0.3          bus            Starship USB 3.0 Host Controller
+/0/119                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11a                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11b                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11c                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11d                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11e                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/11f                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/120                  bridge         Starship/Matisse Root Complex
+/0/120/0.2              generic        Starship/Matisse IOMMU
+/0/120/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/120/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/120/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/120/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/120/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/120/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/120/8.2              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/120/8.2/0            storage        FCH SATA Controller [AHCI mode]
+/0/121                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/122                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/123                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/124                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/125                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/126                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/127                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/128                  bridge         Starship/Matisse Root Complex
+/0/128/0.2              generic        Starship/Matisse IOMMU
+/0/128/5.2              bridge         Starship/Matisse GPP Bridge
+/0/128/5.2/0            bridge         PCI Express Bridge
+/0/128/5.2/0/0          display        Integrated Matrox G200eW3 Graphics Controller
+/0/128/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/128/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/128/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/128/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/128/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/128/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/129                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12a                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12b                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12c                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12d                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12e                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/12f                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/130                  bridge         Starship/Matisse Root Complex
+/0/130/0.2              generic        Starship/Matisse IOMMU
+/0/130/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/130/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/130/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/130/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/130/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/130/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/131                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/132                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/133                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/134                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/135                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/136                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/137                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/138                  bridge         Starship/Matisse Root Complex
+/0/138/0.2              generic        Starship/Matisse IOMMU
+/0/138/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/138/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/138/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/138/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/138/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/138/8.1/0.1          generic        Starship/Matisse Cryptographic Coprocessor PSPCPP
+/0/138/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/139                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13a                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13b                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13c                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13d                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13e                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/13f                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/140                  bridge         Starship/Matisse Root Complex
+/0/140/0.2              generic        Starship/Matisse IOMMU
+/0/140/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/140/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/140/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/140/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/140/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/140/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/141                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/142                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/143                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/144                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/145                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/146                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/147                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/148                  bridge         Starship/Matisse Root Complex
+/0/148/0.2              generic        Starship/Matisse IOMMU
+/0/148/5.1              bridge         Starship/Matisse GPP Bridge
+/0/148/5.1/0    eth0    network        NetXtreme BCM5720 2-port Gigabit Ethernet PCIe
+/0/148/7.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/148/7.1/0            generic        Starship/Matisse PCIe Dummy Function
+/0/148/7.1/0.2          generic        Starship/Matisse PTDMA
+/0/148/8.1              bridge         Starship/Matisse Internal PCIe GPP Bridge 0 to bus[E:B]
+/0/148/8.1/0            generic        Starship/Matisse Reserved SPP
+/0/148/8.1/0.2          generic        Starship/Matisse PTDMA
+/0/149                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14a                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14b                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14c                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14d                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14e                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/14f                  bridge         Starship/Matisse PCIe Dummy Host Bridge
+/0/3                    system         PnP device PNP0c01
+/0/4                    system         PnP device PNP0c02
+/0/5                    system         PnP device PNP0b00
+/0/6                    communication  PnP device PNP0501
+/0/7                    communication  PnP device PNP0501
