@@ -7,7 +7,7 @@
 #include <bitset>
 #include "utils.hpp"
 #include "Reconstructor/Reconstructor.hpp"
-#include "evaluate.hpp"
+//#include "evaluate.hpp"
 
 using namespace std;
 
@@ -42,6 +42,7 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         std::cout << dims.size() << " " << dims[0] << " " << dims[1] << " " << dims[2] << std::endl;
         // TODO: add full resolution check
         if(data.size() == dims[0] * dims[1] * dims[2]) MGARD::print_statistics(data.data(), reconstructed_data, data.size());
+	MGARD::writefile("mgard.out", reconstructed_data, dims[0] * dims[1] * dims[2]);
         // COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
         // COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 0);
     }
