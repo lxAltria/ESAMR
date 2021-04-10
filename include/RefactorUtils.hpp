@@ -151,6 +151,11 @@ namespace MDR {
             err = clock_gettime(CLOCK_REALTIME, &end_time);
             total_time += (double)(end_time.tv_sec - start_time.tv_sec) + (double)(end_time.tv_nsec - start_time.tv_nsec)/(double)1000000000;
         }
+        double get(){
+            double time = (double)(end_time.tv_sec - start_time.tv_sec) + (double)(end_time.tv_nsec - start_time.tv_nsec)/(double)1000000000;
+            clear();
+            return time;
+        }
         void clear(){
             total_time = 0;
         }

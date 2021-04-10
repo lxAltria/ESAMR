@@ -176,22 +176,22 @@ namespace MDR {
                 min_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
                 min_error += error_estimator.estimate_error(level_errors[i].back(), i);
                 // fetch the first component if index is 0
-                if(index[i] == 0){
-                    retrieve_sizes[i] += level_sizes[i][index[i]];
-                    accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
-                    accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
-                    index[i] ++;
-                    std::cout << i;
-                }
+                // if(index[i] == 0){
+                //     retrieve_sizes[i] += level_sizes[i][index[i]];
+                //     accumulated_error -= error_estimator.estimate_error(level_errors[i][index[i]], i);
+                //     accumulated_error += error_estimator.estimate_error(level_errors[i][index[i] + 1], i);
+                //     index[i] ++;
+                //     std::cout << i;
+                // }
                 // push the next one
                 if(index[i] != level_sizes[i].size()){
                     heap.push(estimated_efficiency(accumulated_error, index[i], i, level_errors[i], level_sizes[i]));
                 }
-                if(min_error < tolerance){
-                    // the min error of first 0~i levels meets the tolerance
-                    num_levels = i + 1;
-                    break;
-                }
+                // if(min_error < tolerance){
+                //     // the min error of first 0~i levels meets the tolerance
+                //     num_levels = i + 1;
+                //     break;
+                // }
             }
 
             bool tolerance_met = accumulated_error < tolerance;
