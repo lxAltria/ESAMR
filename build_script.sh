@@ -19,7 +19,8 @@ make install
 cd ${external_dir}
 git clone https://github.com/szcompressor/SZ3.git
 cd SZ3
-git reset --hard de980d9ce85dd3bec7856ab9007abe5d3c2e262f
+#git reset --hard de980d9ce85dd3bec7856ab9007abe5d3c2e262f
+git reset --hard 7fa420d4fc6b0ffa9365ce9b1f815546c3cc125a
 cp ${source_dir}/SZ3_CMakeLists.txt CMakeLists.txt
 mkdir -p build
 cd build
@@ -30,7 +31,7 @@ make -j 8
 cd ${external_dir}
 git clone https://github.com/lxAltria/MGARDx.git
 cd MGARDx
-git set --hard 28d738c3a533db1943bfef7717587a7ac4c93b5f
+git reset --hard 28d738c3a533db1943bfef7717587a7ac4c93b5f
 mkdir -p build
 mkdir -p install
 cd build
