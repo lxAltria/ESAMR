@@ -44,7 +44,7 @@ void test(string filename, const vector<uint32_t>& dims){
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     for(int target_level=0; target_level<5; target_level += 2){
         evaluate<T>(data, dims, target_level, MDR::MGARDOrthoganalDecomposer<T>());
-        evaluate<T>(data, dims, target_level, MDR::MGARDHierarchicalDecomposer<T>());
+        // evaluate<T>(data, dims, target_level, MDR::MGARDHierarchicalDecomposer<T>());
     }
 }
 

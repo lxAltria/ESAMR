@@ -2,8 +2,8 @@
 #define _MDR_MGARD_DECOMPOSER_HPP
 
 #include "DecomposerInterface.hpp"
-#include "decompose.hpp"
-#include "recompose.hpp"
+#include "mgard/mgard.hpp"
+#include "mgard/shuffle.hpp"
 
 namespace MDR {
     // MGARD decomposer with orthogonal basis
@@ -12,48 +12,48 @@ namespace MDR {
     public:
         MGARDOrthoganalDecomposer(){}
         void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
-            MGARD::Decomposer<T> decomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            size_t total_size = 1;
+            for (int i = 0; i < dimensions.size(); i++) total_size *= dimensions[i];
+            T * unshuffled = new T[total_size];
+            memcpy(unshuffled, data, total_size*sizeof(T));
+            if (dimensions.size() == 3) {
+                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[2], dimensions[1], dimensions[0]});
+                mgard::shuffle(hierarchy, unshuffled, data);
+                mgard::decompose(hierarchy, data);
+            } else if (dimensions.size() == 2) {
+                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[1], dimensions[0]});
+                mgard::shuffle(hierarchy, unshuffled, data);
+                mgard::decompose(hierarchy, data);
+            } else if (dimensions.size() == 1) {
+                mgard::TensorMeshHierarchy<1, T> hierarchy({dimensions[0]});
+                mgard::shuffle(hierarchy, unshuffled, data);
+                mgard::decompose(hierarchy, data);
             }
-            decomposer.decompose(data, dims, target_level);
+            delete [] unshuffled;
+ 
         }
         void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
-            MGARD::Recomposer<T> recomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            size_t total_size = 1;
+            for (int i = 0; i < dimensions.size(); i++) total_size *= dimensions[i];
+            T * shuffled = new T[total_size];
+            memcpy(shuffled, data, total_size*sizeof(T));
+            if (dimensions.size() == 3) {
+                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[2], dimensions[1], dimensions[0]});
+                mgard::recompose(hierarchy, shuffled);
+                mgard::unshuffle(hierarchy, shuffled, data);
+            } else if (dimensions.size() == 2) {
+                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[1], dimensions[0]});
+                mgard::recompose(hierarchy, shuffled);
+                mgard::unshuffle(hierarchy, shuffled, data);
+            } else if (dimensions.size() == 1) {
+                mgard::TensorMeshHierarchy<1, T> hierarchy({dimensions[0]});
+                mgard::recompose(hierarchy, shuffled);
+                mgard::unshuffle(hierarchy, shuffled, data);   
             }
-            recomposer.recompose(data, dims, target_level);
+            delete [] shuffled;
         }
         void print() const {
             std::cout << "MGARD orthogonal decomposer" << std::endl;
-        }
-    };
-    // MGARD decomposer with hierarchical basis
-    template<class T>
-    class MGARDHierarchicalDecomposer : public concepts::DecomposerInterface<T> {
-    public:
-        MGARDHierarchicalDecomposer(){}
-        void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
-            MGARD::Decomposer<T> decomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
-            }
-            decomposer.decompose(data, dims, target_level, true);
-        }
-        void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
-            MGARD::Recomposer<T> recomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
-            }
-            recomposer.recompose(data, dims, target_level, true);
-        }
-        void print() const {
-            std::cout << "MGARD hierarchical decomposer" << std::endl;
         }
     };
 }
