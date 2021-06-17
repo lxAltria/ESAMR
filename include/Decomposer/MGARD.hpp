@@ -17,11 +17,11 @@ namespace MDR {
             T * unshuffled = new T[total_size];
             memcpy(unshuffled, data, total_size*sizeof(T));
             if (dimensions.size() == 3) {
-                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[2], dimensions[1], dimensions[0]});
+                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[0], dimensions[1], dimensions[2]});
                 mgard::shuffle(hierarchy, unshuffled, data);
                 mgard::decompose(hierarchy, data);
             } else if (dimensions.size() == 2) {
-                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[1], dimensions[0]});
+                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[0], dimensions[1]});
                 mgard::shuffle(hierarchy, unshuffled, data);
                 mgard::decompose(hierarchy, data);
             } else if (dimensions.size() == 1) {
@@ -38,11 +38,11 @@ namespace MDR {
             T * shuffled = new T[total_size];
             memcpy(shuffled, data, total_size*sizeof(T));
             if (dimensions.size() == 3) {
-                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[2], dimensions[1], dimensions[0]});
+                mgard::TensorMeshHierarchy<3, T> hierarchy({dimensions[0], dimensions[1], dimensions[2]});
                 mgard::recompose(hierarchy, shuffled);
                 mgard::unshuffle(hierarchy, shuffled, data);
             } else if (dimensions.size() == 2) {
-                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[1], dimensions[0]});
+                mgard::TensorMeshHierarchy<2, T> hierarchy({dimensions[0], dimensions[1]});
                 mgard::recompose(hierarchy, shuffled);
                 mgard::unshuffle(hierarchy, shuffled, data);
             } else if (dimensions.size() == 1) {

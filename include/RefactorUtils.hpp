@@ -18,18 +18,31 @@ namespace MDR {
         @params dims: input dimensions
         @params target_level: the target decomposition level
     */
+    /* Different from MGARDx in the computation of level dims 
+        MGARD master: 13 -> 9 -> 5 -> 3 -> 2
+        MGARDx:       13 -> 7 -> 4 -> 3 -> 2
+    */
     std::vector<std::vector<uint32_t>> compute_level_dims(const std::vector<uint32_t>& dims, uint32_t target_level){
         std::vector<std::vector<uint32_t>> level_dims;
         for(int i=0; i<=target_level; i++){
             level_dims.push_back(std::vector<uint32_t>(dims.size()));
         }
         for(int i=0; i<dims.size(); i++){
-            int n = dims[i];
-            for(int j=0; j<=target_level; j++){
+            level_dims[target_level][i] = dims[i];
+            uint p = log2(dims[i] - 1);
+            int n = (1u << p) + 1;
+            for(int j=1; j<=target_level; j++){
                 level_dims[target_level - j][i] = n;
                 n = (n >> 1) + 1;
             }
         }
+        std::cout << "Dimensions:" << std::endl;
+        for(int i=0; i<=target_level; i++){
+            for(int j=0; j<dims.size(); j++)
+                std::cout << level_dims[i][j] << " ";
+            std::cout << std::endl;
+        }
+        std::cout << "Dimensions end" << std::endl;
         return level_dims;
     }
 
