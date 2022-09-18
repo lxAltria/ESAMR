@@ -11,21 +11,27 @@ namespace MDR {
     class MGARDOrthoganalDecomposer : public concepts::DecomposerInterface<T> {
     public:
         MGARDOrthoganalDecomposer(){}
-        void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
+        void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
             MGARD::Decomposer<T> decomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+            if(strides.size() == 0){
+                decomposer.decompose(data, dims, target_level, false);
             }
-            decomposer.decompose(data, dims, target_level);
+            else{
+                std::vector<size_t> strs(strides.begin(), strides.end());
+                decomposer.decompose(data, dims, target_level, false, strs);
+            }
         }
-        void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
+        void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
             MGARD::Recomposer<T> recomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+            if(strides.size() == 0){
+                recomposer.recompose(data, dims, target_level, false);
             }
-            recomposer.recompose(data, dims, target_level);
+            else{
+                std::vector<size_t> strs(strides.begin(), strides.end());
+                recomposer.recompose(data, dims, target_level, false, strs);
+            }
         }
         void print() const {
             std::cout << "MGARD orthogonal decomposer" << std::endl;
@@ -36,21 +42,27 @@ namespace MDR {
     class MGARDHierarchicalDecomposer : public concepts::DecomposerInterface<T> {
     public:
         MGARDHierarchicalDecomposer(){}
-        void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
+        void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
             MGARD::Decomposer<T> decomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+            if(strides.size() == 0){
+                decomposer.decompose(data, dims, target_level, true);
             }
-            decomposer.decompose(data, dims, target_level, true);
+            else{
+                std::vector<size_t> strs(strides.begin(), strides.end());
+                decomposer.decompose(data, dims, target_level, true, strs);
+            }
         }
-        void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const {
+        void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
             MGARD::Recomposer<T> recomposer;
-            std::vector<size_t> dims(dimensions.size());
-            for(int i=0; i<dims.size(); i++){
-                dims[i] = dimensions[i];
+            std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+            if(strides.size() == 0){
+                recomposer.recompose(data, dims, target_level, true);
             }
-            recomposer.recompose(data, dims, target_level, true);
+            else{
+                std::vector<size_t> strs(strides.begin(), strides.end());
+                recomposer.recompose(data, dims, target_level, true, strs);
+            }
         }
         void print() const {
             std::cout << "MGARD hierarchical decomposer" << std::endl;
