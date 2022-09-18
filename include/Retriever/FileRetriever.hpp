@@ -5,7 +5,52 @@
 #include <cstdio>
 
 namespace MDR {
-    // Data retriever for files
+    // Direct retriever for file written by direct writer
+    class DirectFileRetriever : public concepts::RetrieverInterface {
+    public:
+        DirectFileRetriever(const std::string& metadata_file, const std::string& data_name) : metadata_file(metadata_file), data_name(data_name) {}
+
+        std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
+            std::vector<std::vector<const uint8_t*>> level_components;
+            uint32_t total_retrieve_size = 0;
+            for(int i=0; i<level_sizes.size(); i++){
+                std::vector<const uint8_t*> level_component;
+                for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
+                    std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) merged bitplanes from level " << i << std::endl;
+                    std::string filename = data_name + "_" + std::to_string(i) + "_" + std::to_string(j);
+                    FILE * file = fopen(filename.c_str(), "r");
+                    uint8_t * buffer = (uint8_t *) malloc(level_sizes[i][j]);
+                    fread(buffer, sizeof(uint8_t), level_sizes[i][j], file);
+                    fclose(file);
+                    level_component.push_back(buffer);
+                }
+            }
+            std::cout << "Total retrieve size = " << total_retrieve_size << std::endl;
+            return level_components;
+        }
+
+        uint8_t * load_metadata() const {
+            FILE * file = fopen(metadata_file.c_str(), "r");
+            fseek(file, 0, SEEK_END);
+            uint32_t num_bytes = ftell(file);
+            rewind(file);
+            uint8_t * metadata = (uint8_t *) malloc(num_bytes);
+            fread(metadata, 1, num_bytes, file);
+            fclose(file);
+            return metadata;
+        }
+
+        ~DirectFileRetriever(){}
+
+        void print() const {
+            std::cout << "Direct file retriever." << std::endl;
+        }
+    private:
+        std::string metadata_file;
+        std::string data_name;
+    };
+
+    // Data retriever for level-concatenated files
     class ConcatLevelFileRetriever : public concepts::RetrieverInterface {
     public:
         ConcatLevelFileRetriever(const std::string& metadata_file, const std::vector<std::string>& level_files) : metadata_file(metadata_file), level_files(level_files) {
@@ -54,7 +99,7 @@ namespace MDR {
         ~ConcatLevelFileRetriever(){}
 
         void print() const {
-            std::cout << "File retriever." << std::endl;
+            std::cout << "Concatenated file retriever." << std::endl;
         }
     private:
         std::vector<std::vector<const uint8_t*>> interleave_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
