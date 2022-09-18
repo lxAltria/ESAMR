@@ -76,18 +76,6 @@ namespace MDR {
             // std::cout << "interleave done" << std::endl;
         }
 
-        // T compute_max_level_value(T const * level_data, int num_blocks, ptrdiff_t block_offset, const std::vector<std::vector<uint32_t>>& block_level_elements){
-        //     T max_val = 0;
-        //     T const * level_data_pos = level_data;
-        //     for(int i=0; i<num_blocks; i++){
-        //         for(int j=0; j<block_level_elements[i]; j++){
-        //             if(max_val < fabs(level_data_pos[j])) max_val = level_data_pos[j];
-        //         }
-        //         level_data_pos += block_offset;
-        //     }
-        //     return max_val;
-        // }
-
         void collect_components(int target_level, int aggregation_size, uint32_t max_num_block_elements, uint32_t num_bitplanes,
                                     const std::vector<std::vector<uint32_t>>& block_level_elements, const std::vector<uint32_t>& level_offset, T const * data){
             std::cout << "collect_components start" << std::endl;
@@ -101,65 +89,90 @@ namespace MDR {
             // start at finest granularity
             // i.e., all blocks are in the same aggregation area
             int aggregation_granularity = 1;
+            level_max_exp.clear();
+            level_merge_counts.clear();
             for(int l=0; l<=target_level; l++){
                 std::cout << "level " << l << std::endl;
                 std::vector<uint8_t*> level_component;
                 std::vector<uint32_t> level_size;
                 // compute number of aggregations based on aggregation granularity
-                // nx, ny, nz: number of aggregation blocks along each dimension
-                int nx = (num_blocks[0] < aggregation_granularity) ? num_blocks[0] : aggregation_granularity;
-                int ny = (num_blocks[1] < aggregation_granularity) ? num_blocks[1] : aggregation_granularity;
-                int nz = (num_blocks[2] < aggregation_granularity) ? num_blocks[2] : aggregation_granularity;
+                // agg_nx, agg_ny, agg_nz: number of aggregation blocks along each dimension
+                int agg_nx = (num_blocks[0] < aggregation_granularity) ? num_blocks[0] : aggregation_granularity;
+                int agg_ny = (num_blocks[1] < aggregation_granularity) ? num_blocks[1] : aggregation_granularity;
+                int agg_nz = (num_blocks[2] < aggregation_granularity) ? num_blocks[2] : aggregation_granularity;
                 // agg_block_size_x, agg_block_size_y, agg_block_size_z: number of data blocks in each aggregation block
-                int agg_block_size_x = num_blocks[0] / nx;
-                int agg_block_size_y = num_blocks[1] / ny;
-                int agg_block_size_z = num_blocks[2] / nz;
+                int agg_block_size_x = num_blocks[0] / agg_nx;
+                int agg_block_size_y = num_blocks[1] / agg_ny;
+                int agg_block_size_z = num_blocks[2] / agg_nz;
                 // residual for computing block size
-                int residual_x = num_blocks[0] % nx;
-                int residual_y = num_blocks[1] % ny;
-                int residual_z = num_blocks[2] % nz;
-                std::cout << "aggregation dimensions: ";
-                std::cout << nx << " " << ny << " " << nz << std::endl;
-                std::cout << "aggregation block_size: ";
+                int residual_x = num_blocks[0] % agg_nx;
+                int residual_y = num_blocks[1] % agg_ny;
+                int residual_z = num_blocks[2] % agg_nz;
+                std::cout << "number of aggregation blocks in each dimension: ";
+                std::cout << agg_nx << " " << agg_ny << " " << agg_nz << std::endl;
+                std::cout << "number data blocks in each aggregation: ";
                 std::cout << agg_block_size_x << " " << agg_block_size_y << " " << agg_block_size_z << std::endl;
+                // identify the level-wise max element
+                int level_exp = 0;
+                {
+                    T const * data_pos = data;
+                    int block_id = 0;
+                    T level_max_error = 0;
+                    for(int i=0; i<num_blocks[0]; i++){
+                        for(int j=0; j<num_blocks[1]; j++){
+                            for(int k=0; k<num_blocks[2]; k++){
+                                T block_max_error = compute_max_abs_value(reinterpret_cast<T const*>(data_pos), block_level_elements[block_id][l]);
+                                if(block_max_error > level_max_error) level_max_error = block_max_error; 
+                                block_id ++;
+                                data_pos += max_num_block_elements;
+                            }
+                        }
+                    }
+                    frexp(level_max_error, &level_exp);
+                }
+                level_max_exp.push_back(level_exp);
+                auto level_merge_count = std::vector<int>();
+                auto level_merged_sq_err = std::vector<double>();
                 // iterate each aggregation area
-                for(int i=0; i<nx; i++){
-                    int aggregation_nx = (i < residual_x) ? (agg_block_size_x + 1) : agg_block_size_x;
+                for(int i=0; i<agg_nx; i++){
+                    int agg_actual_block_size_nx = (i < residual_x) ? (agg_block_size_x + 1) : agg_block_size_x;
                     int block_offset_x = (i < residual_x) ? (i * (agg_block_size_x + 1)) : (i*agg_block_size_x + residual_x);
-                    for(int j=0; j<ny; j++){
-                        int aggregation_ny = (j < residual_y) ? (agg_block_size_y + 1) : agg_block_size_y;
+                    for(int j=0; j<agg_ny; j++){
+                        int agg_actual_block_size_ny = (j < residual_y) ? (agg_block_size_y + 1) : agg_block_size_y;
                         int block_offset_y = (j < residual_y) ? (j * (agg_block_size_y + 1)) : (i*agg_block_size_y + residual_y);
-                        for(int k=0; k<nz; k++){
-                            int aggregation_nz = (k < residual_z) ? (agg_block_size_z + 1) : agg_block_size_z;
+                        for(int k=0; k<agg_nz; k++){
+                            int agg_actual_block_size_nz = (k < residual_z) ? (agg_block_size_z + 1) : agg_block_size_z;
                             int block_offset_z = (k < residual_z) ? (k * (agg_block_size_z + 1)) : (k*agg_block_size_z + residual_z);
-                            int num_aggregation = aggregation_nx * aggregation_ny * aggregation_nz;
+                            int num_aggregation = agg_actual_block_size_nx * agg_actual_block_size_ny * agg_actual_block_size_nz;
                             // iterate data in one aggregation area which has aggregation_size^3 blocks
                             // buffer is used to store the encoded data
                             std::cout << "aggregation num_blocks: ";
-                            std::cout << aggregation_nx << " " << aggregation_ny << " " << aggregation_nz << std::endl;
+                            std::cout << agg_actual_block_size_nx << " " << agg_actual_block_size_ny << " " << agg_actual_block_size_nz << std::endl;
+                            // accumulate the error in an aggregation block
+                            auto agg_block_sq_errors = std::vector<double>(num_bitplanes + 1, 0);
                             uint8_t * bitplane_pos = buffer;
                             int aggregation_id = 0;
-                            for(int ii=0; ii<aggregation_nx; ii++){
-                                for(int jj=0; jj<aggregation_ny; jj++){
-                                    for(int kk=0; kk<aggregation_nz; kk++){
+                            for(int ii=0; ii<agg_actual_block_size_nx; ii++){
+                                for(int jj=0; jj<agg_actual_block_size_ny; jj++){
+                                    for(int kk=0; kk<agg_actual_block_size_nz; kk++){
                                         // deal with data in one block 
                                         // identify the location of data: block_offset + level_offset
                                         int block_id = (block_offset_x + ii) * num_blocks[1] * num_blocks[2] + (block_offset_y + jj) * num_blocks[2] + (block_offset_z + kk);
-                                        std::cout << "block_id = " << block_id << "\n";
+                                        // std::cout << "block_id = " << block_id << "\n";
                                         auto num_level_elements = block_level_elements[block_id][l];
                                         T const * data_pos = data + block_id * max_num_block_elements + level_offset[l];
                                         // use negabinary encoder, where each bitplane has the same stream_size
-                                        // TODO: consider other encoders
-                                        // TODO: use a global level max error
-                                        T level_max_error = compute_max_abs_value(reinterpret_cast<T const*>(data_pos), num_level_elements);
-                                        int level_exp = 0;
-                                        frexp(level_max_error, &level_exp);
+                                        // TODO: consider other encoders with different stream sizes
                                         std::vector<uint32_t> stream_sizes;
                                         std::vector<double> level_sq_err;
-                                        std::cout << "start encoding: " << "offset = " << data_pos - data << ", num_level_elements = " << num_level_elements << "\n";
+                                        // std::cout << "start encoding: " << "offset = " << data_pos - data << ", num_level_elements = " << num_level_elements << "\n";
                                         auto streams = encoder.encode(data_pos, num_level_elements, level_exp, num_bitplanes, stream_sizes, level_sq_err);
                                         bitplane_sizes[aggregation_id] = stream_sizes[0];
-                                        std::cout << "bitplane_size = " << stream_sizes[0] << "\n";
+                                        // std::cout << "bitplane_size = " << stream_sizes[0] << "\n";
+                                        // merge errors in the aggregation block
+                                        for(int bp=0; bp<=num_bitplanes; bp++){
+                                            agg_block_sq_errors[bp] += level_sq_err[bp];
+                                        }
                                         // copy data for alignment on bitplanes
                                         uint8_t * current_bitplane_pos = bitplane_pos;
                                         for(int bp=0; bp<num_bitplanes; bp++){
@@ -181,31 +194,46 @@ namespace MDR {
                                 aggregated_bitplane_size += bitplane_sizes[i];
                             }
                             uint32_t current_size = 0;
+                            int merge_count = 0;
+                            int index = 0; // current bitplane index
                             uint8_t * buffer_pos = buffer;
                             uint8_t * level_component_buffer_pos = level_component_buffer;
                             std::cout << "aggregated_bitplane_size = " << aggregated_bitplane_size << std::endl;
                             for(int bp=0; bp<num_bitplanes; bp++){
                                 uint8_t * compressed_data = NULL;
                                 auto compressed_size = ZSTD::compress(buffer_pos, aggregated_bitplane_size, &compressed_data);
+                                memcpy(level_component_buffer_pos, compressed_data, compressed_size);
+                                free(compressed_data);
+                                merge_count ++;
+                                current_size += compressed_size;
                                 // concatenate bitplane and put as components
-                                if(current_size + compressed_size > SEGMENT_SIZE){
+                                if(current_size > SEGMENT_SIZE){
                                     level_component.push_back(level_component_buffer);
                                     level_size.push_back(current_size);
                                     level_component_buffer = (uint8_t *) malloc(SEGMENT_SIZE);
+                                    level_merge_count.push_back(merge_count);
+                                    index += merge_count;
+                                    level_merged_sq_err.push_back(agg_block_sq_errors[index]);
+                                    merge_count = 0;
                                     current_size = 0;
                                     level_component_buffer_pos = level_component_buffer;
                                     segment_count ++;                                  
                                 }
-                                memcpy(level_component_buffer_pos, compressed_data, compressed_size);
-                                free(compressed_data);
-                                current_size += compressed_size;
                                 buffer_pos += aggregated_bitplane_size;
                             }
-                            level_component.push_back(level_component_buffer);
-                            level_size.push_back(current_size);
+                            // residual
+                            if(current_size){
+                                index += merge_count;
+                                level_merged_sq_err.push_back(agg_block_sq_errors[index]);
+                                level_merge_count.push_back(merge_count);
+                                level_component.push_back(level_component_buffer);
+                                level_size.push_back(current_size);                                
+                            }
                         }
                     }
                 }
+                level_sq_errors.push_back(level_merged_sq_err);
+                level_merge_counts.push_back(level_merge_count);
                 level_components.push_back(level_component);
                 level_sizes.push_back(level_size);
                 // check whether to change aggregation_size
@@ -213,9 +241,14 @@ namespace MDR {
                     aggregation_granularity *= 2;
                 }
             }
+            print_vec("merge counts", level_merge_counts);
+            print_vec("sizes", level_sizes);
+            print_vec("merged errors", level_sq_errors);
             // TODO: free level_components in other place
             for(int i=0; i<level_components.size(); i++){
+                printf("level %d has %lu components:\n", i, level_components[i].size());
                 for(int j=0; j<level_components[i].size(); j++){
+                    printf("%d: %d\n", j, level_sizes[i][j]);
                     free(level_components[i][j]);
                 }
             }
@@ -296,12 +329,14 @@ namespace MDR {
         Writer writer;
         std::vector<T> data;
         std::vector<uint32_t> dims;
-        std::vector<T> level_error_bounds;
+        // std::vector<T> level_error_bounds;
+        std::vector<int> level_max_exp;
+        std::vector<std::vector<int>> level_merge_counts;
+        std::vector<std::vector<double>> level_sq_errors;
         std::vector<uint8_t> stopping_indices;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<uint32_t> level_num;
-        std::vector<std::vector<double>> level_squared_errors;
         const uint32_t SEGMENT_SIZE = 1024 * 1024; // 1 MB
         std::vector<uint32_t> num_blocks;
         std::vector<uint32_t> strides;
