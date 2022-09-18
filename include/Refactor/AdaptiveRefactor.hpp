@@ -26,6 +26,7 @@ namespace MDR {
                 }
             }
             this->block_size = block_size;
+            this->num_bitplanes = num_bitplanes;
             num_blocks = std::vector<uint32_t>(dims.size());
             for(int i=0; i<dims.size(); i++){
                 num_blocks[i] = (dims[i] - 1) / block_size + 1;
@@ -48,6 +49,24 @@ namespace MDR {
         }
 
         void write_metadata() const {
+            uint32_t metadata_size = sizeof(uint8_t) + get_size(dims) + sizeof(uint8_t) + sizeof(uint8_t)
+                            + sizeof(uint8_t) + get_size(level_max_exp) + get_size(level_merge_counts) 
+                            + get_size(level_squared_errors) + get_size(level_sizes) + get_size(level_num); // level information
+            uint8_t * metadata = (uint8_t *) malloc(metadata_size);
+            uint8_t * metadata_pos = metadata; 
+            *(metadata_pos ++) = (uint8_t) dims.size(); // dimensions
+            serialize(dims, metadata_pos); 
+            *(metadata_pos ++) = num_bitplanes;
+            *(metadata_pos ++) = block_size; // TODO: use different block size on different dimensions 
+            *(metadata_pos ++) = (uint8_t) level_max_exp.size(); // number of levels
+            serialize(level_max_exp, metadata_pos); 
+            serialize(level_merge_counts, metadata_pos);
+            serialize(level_squared_errors, metadata_pos);
+            serialize(level_sizes, metadata_pos);
+            serialize(level_num, metadata_pos);
+            writer.write_metadata(metadata, metadata_size);
+            free(metadata);
+
         }
 
         ~AdaptiveRefactor(){}
@@ -79,7 +98,6 @@ namespace MDR {
         void collect_components(int target_level, int aggregation_size, uint32_t max_num_block_elements, uint32_t num_bitplanes,
                                     const std::vector<std::vector<uint32_t>>& block_level_elements, const std::vector<uint32_t>& level_offset, T const * data){
             std::cout << "collect_components start" << std::endl;
-            int aggregation_total_num = aggregation_size * aggregation_size * aggregation_size;
             // buffer is used to store bitplanes
             uint8_t * buffer = (uint8_t *) malloc(SEGMENT_SIZE * 1024 * sizeof(T));
             std::vector<int> bitplane_sizes(num_blocks[0]*num_blocks[1]*num_blocks[2], 0);
@@ -232,24 +250,13 @@ namespace MDR {
                         }
                     }
                 }
-                level_sq_errors.push_back(level_merged_sq_err);
+                level_squared_errors.push_back(level_merged_sq_err);
                 level_merge_counts.push_back(level_merge_count);
                 level_components.push_back(level_component);
                 level_sizes.push_back(level_size);
                 // check whether to change aggregation_size
                 if(segment_count){
                     aggregation_granularity *= 2;
-                }
-            }
-            print_vec("merge counts", level_merge_counts);
-            print_vec("sizes", level_sizes);
-            print_vec("merged errors", level_sq_errors);
-            // TODO: free level_components in other place
-            for(int i=0; i<level_components.size(); i++){
-                printf("level %d has %lu components:\n", i, level_components[i].size());
-                for(int j=0; j<level_components[i].size(); j++){
-                    printf("%d: %d\n", j, level_sizes[i][j]);
-                    free(level_components[i][j]);
                 }
             }
             free(buffer);
@@ -318,6 +325,19 @@ namespace MDR {
             collect_components(target_level, aggregation_size, max_num_block_elements, num_bitplanes, block_level_elements, level_offset, buffer);
             std::cout << "collect_components done" << std::endl;
             free(buffer);
+            level_num = writer.write_level_components(level_components, level_sizes);
+            write_metadata();
+            // free level components
+            print_vec("merge counts", level_merge_counts);
+            print_vec("sizes", level_sizes);
+            print_vec("merged errors", level_squared_errors);
+            for(int i=0; i<level_components.size(); i++){
+                printf("level %d has %lu components:\n", i, level_components[i].size());
+                for(int j=0; j<level_components[i].size(); j++){
+                    printf("%d: %d\n", j, level_sizes[i][j]);
+                    free(level_components[i][j]);
+                }
+            }
             return true;
         }
 
@@ -332,8 +352,8 @@ namespace MDR {
         // std::vector<T> level_error_bounds;
         std::vector<int> level_max_exp;
         std::vector<std::vector<int>> level_merge_counts;
-        std::vector<std::vector<double>> level_sq_errors;
-        std::vector<uint8_t> stopping_indices;
+        std::vector<std::vector<double>> level_squared_errors;
+        // std::vector<uint8_t> stopping_indices;
         std::vector<std::vector<uint8_t*>> level_components;
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<uint32_t> level_num;
@@ -341,6 +361,7 @@ namespace MDR {
         std::vector<uint32_t> num_blocks;
         std::vector<uint32_t> strides;
         int block_size;
+        int num_bitplanes;
     };
 }
 #endif

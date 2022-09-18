@@ -5,6 +5,41 @@
 #include <cstdio>
 
 namespace MDR {
+    // A writer that writes individual level components
+    class DirectFileWriter : public concepts::WriterInterface {
+    public:
+        DirectFileWriter(const std::string& metadata_file, const std::string& data_name) : metadata_file(metadata_file), data_name(data_name) {}
+
+        std::vector<uint32_t> write_level_components(const std::vector<std::vector<uint8_t*>>& level_components, const std::vector<std::vector<uint32_t>>& level_sizes) const {
+            std::vector<uint32_t> level_num;
+            for(int i=0; i<level_components.size(); i++){
+                level_num.push_back(level_components[i].size());
+                for(int j=0; j<level_components[i].size(); j++){
+                    std::string filename = data_name + "_" + std::to_string(i) + "_" + std::to_string(j);
+                    FILE * file = fopen(filename.c_str(), "w");
+                    fwrite(level_components[i][j], 1, level_sizes[i][j], file);
+                    fclose(file);
+                }
+            }
+            return level_num;
+        }
+
+        void write_metadata(uint8_t const * metadata, uint32_t size) const {
+            FILE * file = fopen(metadata_file.c_str(), "w");
+            fwrite(metadata, 1, size, file);
+            fclose(file);
+        }
+
+        ~DirectFileWriter(){}
+
+        void print() const {
+            std::cout << "Direct file writer." << std::endl;
+        }
+    private:
+        std::string metadata_file;
+        std::string data_name;
+    };
+
     // A writer that writes the concatenated level components
     class ConcatLevelFileWriter : public concepts::WriterInterface {
     public:
