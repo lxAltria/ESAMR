@@ -94,7 +94,7 @@ namespace MDR {
             int aggregation_total_num = aggregation_size * aggregation_size * aggregation_size;
             // buffer is used to store bitplanes
             uint8_t * buffer = (uint8_t *) malloc(SEGMENT_SIZE * 1024 * sizeof(T));
-            std::vector<int> bitplane_sizes(aggregation_total_num, 0);
+            std::vector<int> bitplane_sizes(num_blocks[0]*num_blocks[1]*num_blocks[2], 0);
             int segment_count = 0;
             print_vec(level_offset);
             // aggregation_granularity indicates how many subregions are used along each dimension
@@ -165,6 +165,7 @@ namespace MDR {
                                         for(int bp=0; bp<num_bitplanes; bp++){
                                             memcpy(current_bitplane_pos, streams[bp], stream_sizes[bp]);
                                             current_bitplane_pos += bitplane_sizes[aggregation_id] * num_aggregation;
+                                            free(streams[bp]);
                                         }
                                         bitplane_pos += bitplane_sizes[aggregation_id];
                                         aggregation_id ++;
@@ -211,6 +212,10 @@ namespace MDR {
                 if(segment_count){
                     aggregation_granularity *= 2;
                 }
+            }
+            // TODO: free level_components in other place
+            for(int i=0; i<level_components.size(); i++){
+                free(level_components[i]);
             }
             free(buffer);
         }
