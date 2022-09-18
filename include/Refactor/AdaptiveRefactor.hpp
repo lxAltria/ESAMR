@@ -215,7 +215,9 @@ namespace MDR {
             }
             // TODO: free level_components in other place
             for(int i=0; i<level_components.size(); i++){
-                free(level_components[i]);
+                for(int j=0; j<level_components[i].size(); j++){
+                    free(level_components[i][j]);
+                }
             }
             free(buffer);
         }
