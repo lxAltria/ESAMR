@@ -18,7 +18,9 @@ namespace MDR {
     class ComposedReconstructor : public concepts::ReconstructorInterface<T> {
     public:
         ComposedReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, SizeInterpreter interpreter, Retriever retriever)
-            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), interpreter(interpreter), retriever(retriever){}
+            : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), interpreter(interpreter), retriever(retriever){
+                load_metadata();
+            }
 
         // reconstruct data from encoded streams
         T * reconstruct(double tolerance){

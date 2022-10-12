@@ -71,7 +71,8 @@ int main(int argc, char ** argv){
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
     // auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
-    auto writer = MDR::DirectFileWriter(metadata_file, "refactored_data/data");
+    // auto writer = MDR::DirectFileWriter(metadata_file, "refactored_data/data");
+    auto writer = MDR::MultiblockFileWriter(metadata_file, "refactored_data/data", num_bitplanes);
     // auto writer = MDR::HPSSFileWriter(metadata_file, files, 2048, 512 * 1024 * 1024);
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);

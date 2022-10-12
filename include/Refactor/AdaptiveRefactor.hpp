@@ -51,7 +51,9 @@ namespace MDR {
         void write_metadata() const {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dims) + sizeof(uint8_t) + sizeof(uint8_t)
                             + sizeof(uint8_t) + get_size(level_max_exp) + get_size(level_merge_counts) 
-                            + get_size(level_squared_errors) + get_size(level_sizes) + get_size(level_num); // level information
+                            + get_size(level_squared_errors) 
+                            // + get_size(level_sizes) 
+                            + get_size(level_num) + get_size(level_agg_block_bp_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata; 
             *(metadata_pos ++) = (uint8_t) dims.size(); // dimensions
@@ -62,8 +64,10 @@ namespace MDR {
             serialize(level_max_exp, metadata_pos); 
             serialize(level_merge_counts, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
-            serialize(level_sizes, metadata_pos);
+            // serialize(level_sizes, metadata_pos);
             serialize(level_num, metadata_pos);
+            serialize(level_agg_block_bp_sizes, metadata_pos);
+            printf("Write metadata: size = %d, accumulative size = %d\n", metadata_size, metadata_pos - metadata);
             writer.write_metadata(metadata, metadata_size);
             free(metadata);
 
@@ -99,7 +103,9 @@ namespace MDR {
                                     const std::vector<std::vector<uint32_t>>& block_level_elements, const std::vector<uint32_t>& level_offset, T const * data){
             std::cout << "collect_components start" << std::endl;
             // buffer is used to store bitplanes
-            uint8_t * buffer = (uint8_t *) malloc(SEGMENT_SIZE * 1024 * sizeof(T));
+            // buffer layout: [B1P1 B2P1 B3P1 ..., B1P2 B2P2 B3P2 ...]
+            // TODO: explore [B1P1 B1P2 ..., B2P1 B2P2 ..., B3P1 B3P2 ...]
+            uint8_t * buffer = (uint8_t *) malloc(SEGMENT_SIZE * 2 * sizeof(T));
             std::vector<int> bitplane_sizes(num_blocks[0]*num_blocks[1]*num_blocks[2], 0);
             int segment_count = 0;
             print_vec(level_offset);
@@ -109,6 +115,8 @@ namespace MDR {
             int aggregation_granularity = 1;
             level_max_exp.clear();
             level_merge_counts.clear();
+            level_agg_block_bp_sizes.clear();
+            level_sizes.clear();
             for(int l=0; l<=target_level; l++){
                 std::cout << "level " << l << std::endl;
                 std::vector<uint8_t*> level_component;
@@ -139,7 +147,7 @@ namespace MDR {
                     for(int i=0; i<num_blocks[0]; i++){
                         for(int j=0; j<num_blocks[1]; j++){
                             for(int k=0; k<num_blocks[2]; k++){
-                                T block_max_error = compute_max_abs_value(reinterpret_cast<T const*>(data_pos), block_level_elements[block_id][l]);
+                                T block_max_error = compute_max_abs_value(reinterpret_cast<T const*>(data_pos + level_offset[l]), block_level_elements[block_id][l]);
                                 if(block_max_error > level_max_error) level_max_error = block_max_error; 
                                 block_id ++;
                                 data_pos += max_num_block_elements;
@@ -150,14 +158,15 @@ namespace MDR {
                 }
                 level_max_exp.push_back(level_exp);
                 auto level_merge_count = std::vector<int>();
-                auto level_merged_sq_err = std::vector<double>();
+                auto agg_block_merged_sq_error = std::vector<std::vector<double>>();
+                auto block_bp_sizes = std::vector<std::vector<uint32_t>>();
                 // iterate each aggregation area
                 for(int i=0; i<agg_nx; i++){
                     int agg_actual_block_size_nx = (i < residual_x) ? (agg_block_size_x + 1) : agg_block_size_x;
                     int block_offset_x = (i < residual_x) ? (i * (agg_block_size_x + 1)) : (i*agg_block_size_x + residual_x);
                     for(int j=0; j<agg_ny; j++){
                         int agg_actual_block_size_ny = (j < residual_y) ? (agg_block_size_y + 1) : agg_block_size_y;
-                        int block_offset_y = (j < residual_y) ? (j * (agg_block_size_y + 1)) : (i*agg_block_size_y + residual_y);
+                        int block_offset_y = (j < residual_y) ? (j * (agg_block_size_y + 1)) : (j*agg_block_size_y + residual_y);
                         for(int k=0; k<agg_nz; k++){
                             int agg_actual_block_size_nz = (k < residual_z) ? (agg_block_size_z + 1) : agg_block_size_z;
                             int block_offset_z = (k < residual_z) ? (k * (agg_block_size_z + 1)) : (k*agg_block_size_z + residual_z);
@@ -166,8 +175,8 @@ namespace MDR {
                             // buffer is used to store the encoded data
                             std::cout << "aggregation num_blocks: ";
                             std::cout << agg_actual_block_size_nx << " " << agg_actual_block_size_ny << " " << agg_actual_block_size_nz << std::endl;
-                            // accumulate the error in an aggregation block
-                            auto agg_block_sq_errors = std::vector<double>(num_bitplanes + 1, 0);
+                            // record the errors in an aggregation block
+                            auto agg_block_sq_error = std::vector<std::vector<double>>(num_bitplanes + 1, std::vector<double>());
                             uint8_t * bitplane_pos = buffer;
                             int aggregation_id = 0;
                             for(int ii=0; ii<agg_actual_block_size_nx; ii++){
@@ -182,14 +191,13 @@ namespace MDR {
                                         // use negabinary encoder, where each bitplane has the same stream_size
                                         // TODO: consider other encoders with different stream sizes
                                         std::vector<uint32_t> stream_sizes;
-                                        std::vector<double> level_sq_err;
+                                        std::vector<double> sq_err;
                                         // std::cout << "start encoding: " << "offset = " << data_pos - data << ", num_level_elements = " << num_level_elements << "\n";
-                                        auto streams = encoder.encode(data_pos, num_level_elements, level_exp, num_bitplanes, stream_sizes, level_sq_err);
+                                        auto streams = encoder.encode(data_pos, num_level_elements, level_exp, num_bitplanes, stream_sizes, sq_err);
                                         bitplane_sizes[aggregation_id] = stream_sizes[0];
-                                        // std::cout << "bitplane_size = " << stream_sizes[0] << "\n";
-                                        // merge errors in the aggregation block
+                                        // record all errors
                                         for(int bp=0; bp<=num_bitplanes; bp++){
-                                            agg_block_sq_errors[bp] += level_sq_err[bp];
+                                            agg_block_sq_error[bp].push_back(sq_err[bp]);
                                         }
                                         // copy data for alignment on bitplanes
                                         uint8_t * current_bitplane_pos = bitplane_pos;
@@ -204,6 +212,11 @@ namespace MDR {
                                 }
                             }
                             std::cout << std::endl;
+                            if(l == 0){
+                                std::cout << " " << agg_block_sq_error.size() << " " << agg_block_sq_error[0].size() << std::endl;
+                                print_vec("agg_block_sq_error:", agg_block_sq_error);
+                                // exit(0);
+                            }
                             // TODO: bitplane size is larger than SEGMENT_SIZE 
                             uint8_t * level_component_buffer = (uint8_t *) malloc(SEGMENT_SIZE);
                             // compress each bitplane
@@ -214,12 +227,15 @@ namespace MDR {
                             uint32_t current_size = 0;
                             int merge_count = 0;
                             int index = 0; // current bitplane index
+                            agg_block_merged_sq_error.push_back(agg_block_sq_error[index]); // put the first error
                             uint8_t * buffer_pos = buffer;
                             uint8_t * level_component_buffer_pos = level_component_buffer;
                             std::cout << "aggregated_bitplane_size = " << aggregated_bitplane_size << std::endl;
+                            std::vector<uint32_t> bp_sizes;  
                             for(int bp=0; bp<num_bitplanes; bp++){
                                 uint8_t * compressed_data = NULL;
                                 auto compressed_size = ZSTD::compress(buffer_pos, aggregated_bitplane_size, &compressed_data);
+                                bp_sizes.push_back(compressed_size);
                                 memcpy(level_component_buffer_pos, compressed_data, compressed_size);
                                 free(compressed_data);
                                 merge_count ++;
@@ -231,7 +247,8 @@ namespace MDR {
                                     level_component_buffer = (uint8_t *) malloc(SEGMENT_SIZE);
                                     level_merge_count.push_back(merge_count);
                                     index += merge_count;
-                                    level_merged_sq_err.push_back(agg_block_sq_errors[index]);
+                                    printf("index = %d\n", index);
+                                    agg_block_merged_sq_error.push_back(agg_block_sq_error[index]);
                                     merge_count = 0;
                                     current_size = 0;
                                     level_component_buffer_pos = level_component_buffer;
@@ -239,10 +256,12 @@ namespace MDR {
                                 }
                                 buffer_pos += aggregated_bitplane_size;
                             }
+                            block_bp_sizes.push_back(bp_sizes);
                             // residual
                             if(current_size){
                                 index += merge_count;
-                                level_merged_sq_err.push_back(agg_block_sq_errors[index]);
+                                printf("index = %d\n", index);
+                                agg_block_merged_sq_error.push_back(agg_block_sq_error[index]);
                                 level_merge_count.push_back(merge_count);
                                 level_component.push_back(level_component_buffer);
                                 level_size.push_back(current_size);                                
@@ -250,9 +269,10 @@ namespace MDR {
                         }
                     }
                 }
-                level_squared_errors.push_back(level_merged_sq_err);
+                level_squared_errors.push_back(agg_block_merged_sq_error);
                 level_merge_counts.push_back(level_merge_count);
                 level_components.push_back(level_component);
+                level_agg_block_bp_sizes.push_back(block_bp_sizes);
                 level_sizes.push_back(level_size);
                 // check whether to change aggregation_size
                 if(segment_count){
@@ -273,7 +293,7 @@ namespace MDR {
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
             auto nz = num_blocks[2];
-            uint32_t total_num_blocks = nx * ny * nz;
+            auto total_num_blocks = nx * ny * nz;
             std::vector<uint32_t> block_dims(3, block_size);
             uint32_t max_num_block_elements = block_size * block_size * block_size;
             auto max_level_dims = compute_level_dims(block_dims, target_level);
@@ -325,12 +345,14 @@ namespace MDR {
             collect_components(target_level, aggregation_size, max_num_block_elements, num_bitplanes, block_level_elements, level_offset, buffer);
             std::cout << "collect_components done" << std::endl;
             free(buffer);
-            level_num = writer.write_level_components(level_components, level_sizes);
+            level_num = writer.write_level_components(level_components, level_sizes, level_merge_counts);
             write_metadata();
             // free level components
             print_vec("merge counts", level_merge_counts);
             print_vec("sizes", level_sizes);
-            print_vec("merged errors", level_squared_errors);
+            for(int i=0; i<=target_level; i++){
+                print_vec("merged errors", level_squared_errors[i]);            
+            }
             for(int i=0; i<level_components.size(); i++){
                 printf("level %d has %lu components:\n", i, level_components[i].size());
                 for(int j=0; j<level_components[i].size(); j++){
@@ -352,11 +374,13 @@ namespace MDR {
         // std::vector<T> level_error_bounds;
         std::vector<int> level_max_exp;
         std::vector<std::vector<int>> level_merge_counts;
-        std::vector<std::vector<double>> level_squared_errors;
-        // std::vector<uint8_t> stopping_indices;
-        std::vector<std::vector<uint8_t*>> level_components;
+        // std::vector<std::vector<double>> level_squared_errors;
+        std::vector<std::vector<std::vector<double>>> level_squared_errors; // L x b x P
         std::vector<std::vector<uint32_t>> level_sizes;
+        std::vector<std::vector<std::vector<uint32_t>>> level_agg_block_bp_sizes;
+        std::vector<std::vector<uint8_t*>> level_components;
         std::vector<uint32_t> level_num;
+        // std::vector<uint8_t> stopping_indices;
         const uint32_t SEGMENT_SIZE = 1024 * 1024; // 1 MB
         std::vector<uint32_t> num_blocks;
         std::vector<uint32_t> strides;

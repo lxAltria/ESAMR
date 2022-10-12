@@ -88,7 +88,14 @@ namespace MDR {
         }
         return size;
     }
-
+    template <class T>
+    uint32_t get_size(const std::vector<std::vector<std::vector<T>>>& vec){
+        uint32_t size = 0;
+        for(int i=0; i<vec.size(); i++){
+            size += sizeof(uint32_t) + get_size(vec[i]);
+        }
+        return size;
+    }
     // Serialize/deserialize vectors
     // Auto-increment buffer position
     template <class T>
@@ -107,6 +114,14 @@ namespace MDR {
         }
     }
     template <class T>
+    void serialize(const std::vector<std::vector<std::vector<T>>>& vec, uint8_t *& buffer_pos){
+        for(int i=0; i<vec.size(); i++){
+            *reinterpret_cast<uint32_t*>(buffer_pos) = vec[i].size();
+            buffer_pos += sizeof(uint32_t);
+            serialize(vec[i], buffer_pos);
+        }
+    }
+    template <class T>
     inline void deserialize(uint8_t const *& buffer_pos, uint32_t size, std::vector<T>& vec){
         vec.clear();
         vec = std::vector<T>(reinterpret_cast<const T*>(buffer_pos), reinterpret_cast<const T*>(buffer_pos) + size);
@@ -121,6 +136,17 @@ namespace MDR {
             std::vector<T> level_vec = std::vector<T>(reinterpret_cast<const T *>(buffer_pos), reinterpret_cast<const T *>(buffer_pos) + num);
             vec.push_back(level_vec);
             buffer_pos += num * sizeof(T);
+        }
+    }
+    template <class T>
+    void deserialize(uint8_t const *& buffer_pos, uint32_t num_levels, std::vector<std::vector<std::vector<T>>>& vec){
+        vec.clear();
+        for(int i=0; i<num_levels; i++){
+            std::vector<std::vector<T>> level_vec;
+            uint32_t num = *reinterpret_cast<const uint32_t*>(buffer_pos);
+            buffer_pos += sizeof(uint32_t);
+            deserialize(buffer_pos, num, level_vec);
+            vec.push_back(level_vec);
         }
     }
 

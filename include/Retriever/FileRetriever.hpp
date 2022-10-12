@@ -5,50 +5,6 @@
 #include <cstdio>
 
 namespace MDR {
-    // Direct retriever for file written by direct writer
-    class DirectFileRetriever : public concepts::RetrieverInterface {
-    public:
-        DirectFileRetriever(const std::string& metadata_file, const std::string& data_name) : metadata_file(metadata_file), data_name(data_name) {}
-
-        std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
-            std::vector<std::vector<const uint8_t*>> level_components;
-            uint32_t total_retrieve_size = 0;
-            for(int i=0; i<level_sizes.size(); i++){
-                std::vector<const uint8_t*> level_component;
-                for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
-                    std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) merged bitplanes from level " << i << std::endl;
-                    std::string filename = data_name + "_" + std::to_string(i) + "_" + std::to_string(j);
-                    FILE * file = fopen(filename.c_str(), "r");
-                    uint8_t * buffer = (uint8_t *) malloc(level_sizes[i][j]);
-                    fread(buffer, sizeof(uint8_t), level_sizes[i][j], file);
-                    fclose(file);
-                    level_component.push_back(buffer);
-                }
-            }
-            std::cout << "Total retrieve size = " << total_retrieve_size << std::endl;
-            return level_components;
-        }
-
-        uint8_t * load_metadata() const {
-            FILE * file = fopen(metadata_file.c_str(), "r");
-            fseek(file, 0, SEEK_END);
-            uint32_t num_bytes = ftell(file);
-            rewind(file);
-            uint8_t * metadata = (uint8_t *) malloc(num_bytes);
-            fread(metadata, 1, num_bytes, file);
-            fclose(file);
-            return metadata;
-        }
-
-        ~DirectFileRetriever(){}
-
-        void print() const {
-            std::cout << "Direct file retriever." << std::endl;
-        }
-    private:
-        std::string metadata_file;
-        std::string data_name;
-    };
 
     // Data retriever for level-concatenated files
     class ConcatLevelFileRetriever : public concepts::RetrieverInterface {
@@ -121,5 +77,80 @@ namespace MDR {
         std::vector<uint32_t> offsets;
         std::vector<uint8_t*> concated_level_components;
     };
+
+    // Direct retriever for file written by direct writer
+    class DirectFileRetriever : public concepts::RetrieverInterface {
+    public:
+        DirectFileRetriever(const std::string& metadata_file, const std::string& data_name) : metadata_file(metadata_file), data_name(data_name) {}
+
+        std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
+            std::vector<std::vector<const uint8_t*>> level_components;
+            for(int i=0; i<level_sizes.size(); i++){
+                std::vector<const uint8_t*> level_component;
+                for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
+                    std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) merged bitplanes from level " << i << std::endl;
+                    std::string filename = data_name + "_" + std::to_string(i) + "_" + std::to_string(j);
+                    FILE * file = fopen(filename.c_str(), "r");
+                    uint8_t * buffer = (uint8_t *) malloc(level_sizes[i][j]);
+                    fread(buffer, sizeof(uint8_t), level_sizes[i][j], file);
+                    fclose(file);
+                    level_component.push_back(buffer);
+                }
+            }
+            return level_components;
+        }
+
+        uint8_t * load_metadata() const {
+            FILE * file = fopen(metadata_file.c_str(), "r");
+            fseek(file, 0, SEEK_END);
+            uint32_t num_bytes = ftell(file);
+            rewind(file);
+            uint8_t * metadata = (uint8_t *) malloc(num_bytes);
+            fread(metadata, 1, num_bytes, file);
+            fclose(file);
+            return metadata;
+        }
+
+        void release(){}
+
+        ~DirectFileRetriever(){}
+
+        void print() const {
+            std::cout << "Direct file retriever." << std::endl;
+        }
+    protected:
+        std::string metadata_file;
+        std::string data_name;
+    };
+
+    // A retriever that reads multiblock components
+    // used in adaptive recontructor
+    class MultiblockFileRetriever : public DirectFileRetriever {
+    public:
+        MultiblockFileRetriever(const std::string& metadata_file, const std::string& data_name) : DirectFileRetriever(metadata_file, data_name) {}
+
+        // return the requested segments for a aggregated block
+        std::vector<const uint8_t*> retrieve_level_segments(int level, int block, const std::vector<uint32_t>& segment_sizes, int start, int end){
+            std::vector<const uint8_t*> level_segments;
+            for(int i=start; i<end; i++){
+                std::string filename = data_name + "_L" + std::to_string(level) + "_B" + std::to_string(block) + "_S" + std::to_string(i);
+                printf("file = %s\n", filename.c_str());
+                FILE * file = fopen(filename.c_str(), "r");
+                uint8_t * buffer = (uint8_t *) malloc(segment_sizes[i]);
+                fread(buffer, sizeof(uint8_t), segment_sizes[i], file);
+                fclose(file);
+                level_segments.push_back(buffer);
+            }
+            return level_segments;
+        }
+
+        ~MultiblockFileRetriever(){}
+
+        void print() const {
+            std::cout << "Multiblock file retriever." << std::endl;
+        }
+    };
+
+
 }
 #endif

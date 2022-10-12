@@ -31,7 +31,6 @@ make -j 8
 cd ${external_dir}
 git clone https://github.com/lxAltria/MGARDx.git
 cd MGARDx
-git reset --hard 28d738c3a533db1943bfef7717587a7ac4c93b5f
 mkdir -p build
 mkdir -p install
 cd build

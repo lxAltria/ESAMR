@@ -25,17 +25,13 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
         cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         auto dims = reconstructor.get_dimensions();
         MGARD::print_statistics(data.data(), reconstructed_data, data.size());
-        // COMP_UTILS::evaluate_gradients(data.data(), reconstructed_data, dims[0], dims[1], dims[2]);
-        // COMP_UTILS::evaluate_average(data.data(), reconstructed_data, dims[0], dims[1], dims[2], 0);
     }
 }
 
 template <class T, class Decomposer, class Interleaver, class Encoder, class Compressor, class ErrorEstimator, class SizeInterpreter, class Retriever>
 void test(string filename, const vector<double>& tolerance, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorEstimator estimator, SizeInterpreter interpreter, Retriever retriever){
-    auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
-    cout << "loading metadata" << endl;
-    reconstructor.load_metadata();
-
+    // auto reconstructor = MDR::ComposedReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
+    auto reconstructor = MDR::AdaptiveReconstructor<T, Decomposer, Interleaver, Encoder, Compressor, SizeInterpreter, ErrorEstimator, Retriever>(decomposer, interleaver, encoder, compressor, interpreter, retriever);
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     evaluate(data, tolerance, reconstructor);
@@ -84,7 +80,8 @@ int main(int argc, char ** argv){
     // auto compressor = MDR::DefaultLevelCompressor();
     auto compressor = MDR::AdaptiveLevelCompressor(32);
     // auto compressor = MDR::NullLevelCompressor();
-    auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
+    // auto retriever = MDR::ConcatLevelFileRetriever(metadata_file, files);
+    auto retriever = MDR::MultiblockFileRetriever(metadata_file, "refactored_data/data");
     switch(error_mode){
         case 1:{
             auto estimator = MDR::SNormErrorEstimator<T>(num_dims, num_levels - 1, s);
