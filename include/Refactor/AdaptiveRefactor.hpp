@@ -286,6 +286,9 @@ namespace MDR {
                                 level_component.push_back(level_component_buffer);
                                 level_size.push_back(current_size);                                
                             }
+                            else{
+                                free(level_component_buffer);
+                            }
                         }
                     }
                 }
