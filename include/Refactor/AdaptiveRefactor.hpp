@@ -94,6 +94,11 @@ namespace MDR {
                 const std::vector<uint32_t>& prev_dims = (l == 0) ? dims_dummy : level_dims[l - 1];
                 // use dimensions instead of block_dims because of global strides
                 interleaver.interleave(data, this->dims, level_dims[l], prev_dims, reinterpret_cast<T*>(cur_buffer_pos), this->strides);
+                // for(int i=0; i<level_elements[l]; i++){
+                //     std::cout << cur_buffer_pos[i] << " ";
+                // }
+                // std::cout << std::endl;
+                // exit(0);
                 cur_buffer_pos += level_elements[l];
             }            
             // std::cout << "interleave done" << std::endl;
@@ -212,13 +217,13 @@ namespace MDR {
                                 }
                             }
                             std::cout << std::endl;
-                            if(l == 0){
-                                std::cout << " " << agg_block_sq_error.size() << " " << agg_block_sq_error[0].size() << std::endl;
-                                print_vec("agg_block_sq_error:", agg_block_sq_error);
-                                // exit(0);
-                            }
+                            // if(l == 0){
+                            //     std::cout << " " << agg_block_sq_error.size() << " " << agg_block_sq_error[0].size() << std::endl;
+                            //     print_vec("agg_block_sq_error:", agg_block_sq_error);
+                            //     exit(0);
+                            // }
                             // TODO: bitplane size is larger than SEGMENT_SIZE 
-                            uint8_t * level_component_buffer = (uint8_t *) malloc(SEGMENT_SIZE);
+                            uint8_t * level_component_buffer = (uint8_t *) malloc(2*SEGMENT_SIZE);
                             // compress each bitplane
                             int aggregated_bitplane_size = 0;
                             for(int i=0; i<num_aggregation; i++){
@@ -236,18 +241,29 @@ namespace MDR {
                                 uint8_t * compressed_data = NULL;
                                 auto compressed_size = ZSTD::compress(buffer_pos, aggregated_bitplane_size, &compressed_data);
                                 bp_sizes.push_back(compressed_size);
+                                if((l==0) && (i==0) && (j==0) && (k==0) && (bp == 0)){
+                                    std::cout << "offset = " << level_component_buffer_pos - level_component_buffer << std::endl;
+                                    std::cout << "size = " << compressed_size << std::endl;
+                                    // std::cout << compressed_data;
+                                    for(int i=0; i<compressed_size; i++){
+                                        std::cout << +compressed_data[i] << " ";
+                                    }
+                                    std::cout << std::endl;
+                                    // exit(0);
+                                }
                                 memcpy(level_component_buffer_pos, compressed_data, compressed_size);
-                                free(compressed_data);
+                                level_component_buffer_pos += compressed_size;
                                 merge_count ++;
                                 current_size += compressed_size;
+                                free(compressed_data);
                                 // concatenate bitplane and put as components
                                 if(current_size > SEGMENT_SIZE){
                                     level_component.push_back(level_component_buffer);
                                     level_size.push_back(current_size);
-                                    level_component_buffer = (uint8_t *) malloc(SEGMENT_SIZE);
+                                    level_component_buffer = (uint8_t *) malloc(2*SEGMENT_SIZE);
                                     level_merge_count.push_back(merge_count);
                                     index += merge_count;
-                                    printf("index = %d\n", index);
+                                    // printf("index = %d\n", index);
                                     agg_block_merged_sq_error.push_back(agg_block_sq_error[index]);
                                     merge_count = 0;
                                     current_size = 0;
@@ -260,7 +276,7 @@ namespace MDR {
                             // residual
                             if(current_size){
                                 index += merge_count;
-                                printf("index = %d\n", index);
+                                // printf("index = %d\n", index);
                                 agg_block_merged_sq_error.push_back(agg_block_sq_error[index]);
                                 level_merge_count.push_back(merge_count);
                                 level_component.push_back(level_component_buffer);
@@ -278,6 +294,15 @@ namespace MDR {
                 if(segment_count){
                     aggregation_granularity *= 2;
                 }
+                std::cout << "components size:";
+                for(int i=0; i<=l; i++){
+                    std::cout << level_agg_block_bp_sizes[i].size() << " ";
+                }
+                std::cout << std::endl;
+                for(int i=0; i<level_agg_block_bp_sizes[0][0][0]; i++){
+                    std::cout << +level_components[0][0][i] << " ";
+                }
+                std::cout << std::endl;                
             }
             free(buffer);
         }
@@ -348,15 +373,20 @@ namespace MDR {
             level_num = writer.write_level_components(level_components, level_sizes, level_merge_counts);
             write_metadata();
             // free level components
-            print_vec("merge counts", level_merge_counts);
-            print_vec("sizes", level_sizes);
+            // print_vec("merge counts", level_merge_counts);
+            print_vec("level_sizes", level_sizes);
             for(int i=0; i<=target_level; i++){
-                print_vec("merged errors", level_squared_errors[i]);            
+                print_vec("level_agg_block_bp_sizes", level_agg_block_bp_sizes[i]);
+                // print_vec("merged errors", level_squared_errors[i]);            
             }
+            for(int i=0; i<level_agg_block_bp_sizes[0][0][0]; i++){
+                std::cout << +level_components[0][0][i] << " ";
+            }
+            std::cout << std::endl;
             for(int i=0; i<level_components.size(); i++){
-                printf("level %d has %lu components:\n", i, level_components[i].size());
+                // printf("level %d has %lu components:\n", i, level_components[i].size());
                 for(int j=0; j<level_components[i].size(); j++){
-                    printf("%d: %d\n", j, level_sizes[i][j]);
+                    // printf("%d: %d\n", j, level_sizes[i][j]);
                     free(level_components[i][j]);
                 }
             }

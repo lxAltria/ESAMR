@@ -33,7 +33,7 @@ namespace MDR {
                     level_block_num_segments.push_back(std::vector<uint8_t>(num_agg_blocks[0] * num_agg_blocks[1] * num_agg_blocks[2], 0)); 
                 }
                 converged = std::vector<bool>(num_blocks[0] * num_blocks[1] * num_blocks[2], false);
-                data = std::vector<T>(num_elements);
+                data = std::vector<T>(num_elements, 0);
             }
 
         // reconstruct data from encoded streams
@@ -101,8 +101,19 @@ namespace MDR {
                         for(int bp=0; bp<block_merge_counts[agg_block_id][i]; bp++){
                             uint8_t * precision_segment = NULL;
                             printf("level = %d, agg_block = %d, segment = %d, bitplane = %d\n", l, agg_block_id, i, bp + bp_offset);
+                            printf("agg_block_bp_size = %d\n", agg_block_bp_sizes[agg_block_id][bp + bp_offset]);
+                            for(int i=0; i<agg_block_bp_sizes[agg_block_id][bp + bp_offset]; i++){
+                                std::cout << +compressed_data_pos[i] << " ";
+                            }
+                            std::cout << std::endl;
+                            exit(0);
                             auto decompressed_size = ZSTD::decompress(compressed_data_pos, agg_block_bp_sizes[agg_block_id][bp + bp_offset], &precision_segment);
-                            // printf("decompressed_size = %d\n", decompressed_size);
+                            printf("decompressed_size = %d\n", decompressed_size);
+                            for(int i=0; i<decompressed_size; i++){
+                                std::cout << +precision_segment[i];
+                            }
+                            std::cout << std::endl;
+                            exit(0);
                             decompressed_segments.push_back(precision_segment);
                             // prepare each precision fragment
                             const uint8_t * bitplane_pos = precision_segment;
@@ -172,7 +183,7 @@ namespace MDR {
                 stride *= dims[i];
             } 
             auto total_num_blocks = num_blocks[0] * num_blocks[1] * num_blocks[2];
-            print_vec("merge counts", level_merge_counts);
+            // print_vec("merge counts", level_merge_counts);
             // print_vec("sizes", level_sizes);
             // print_vec("merged errors", level_squared_errors);
             // compute level_aggregation_granularity and level_block_merge_counts
@@ -259,13 +270,13 @@ namespace MDR {
                 }
                 level_agg_block_sizes.push_back(agg_block_sizes);
             }
-            print_vec(level_aggregation_granularity);
-            for(int l=0; l<num_levels; l++){
-                print_vec("level_agg_block_sizes", level_agg_block_sizes[l]);
-                print_vec("level_agg_block_bp_sizes", level_agg_block_bp_sizes[l]);
-                print_vec("level_block_merge_counts", level_block_merge_counts[l]);                
-                print_vec("level_block_squared_errors", level_block_squared_errors[l]);                
-            }
+            // print_vec(level_aggregation_granularity);
+            // for(int l=0; l<num_levels; l++){
+            //     print_vec("level_agg_block_sizes", level_agg_block_sizes[l]);
+            //     print_vec("level_agg_block_bp_sizes", level_agg_block_bp_sizes[l]);
+            //     print_vec("level_block_merge_counts", level_block_merge_counts[l]);                
+            //     print_vec("level_block_squared_errors", level_block_squared_errors[l]);                
+            // }
             // compute block_level_dims and block_level_elements
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
@@ -305,6 +316,7 @@ namespace MDR {
         struct AggregationBlockInfo{
             int agg_block_id;       // id of aggregation block
             int agg_block_offset;   // offset inside the aggregation block
+            AggregationBlockInfo(){}
             AggregationBlockInfo(int id, int offset){
                 agg_block_id = id;
                 agg_block_offset = offset;
@@ -364,12 +376,13 @@ namespace MDR {
                 level_block_aggregation_map.push_back(block_aggregation_map);
                 level_aggregation_block_map.push_back(aggregation_block_map);
             }
-            for(int l=0; l<level_block_aggregation_map.size(); l++){
-                const auto& map = level_block_aggregation_map[l];
-                for(const auto& iter:map){
-                    std::cout << iter.first << " (" << iter.second.agg_block_id << ", " << iter.second.agg_block_offset << ")\n";
-                }
-            }
+            // print map
+            // for(int l=0; l<level_block_aggregation_map.size(); l++){
+            //     const auto& map = level_block_aggregation_map[l];
+            //     for(const auto& iter:map){
+            //         std::cout << iter.first << " (" << iter.second.agg_block_id << ", " << iter.second.agg_block_offset << ")\n";
+            //     }
+            // }
         }
 
         template<class T1>
@@ -424,12 +437,26 @@ namespace MDR {
                                 if(components.size() > 0){
                                     auto prev_num_bp = prev_level_block_num_bitplanes[l][block_id];
                                     auto curr_num_bp = level_block_num_bitplanes[l][block_id];
-                                    auto level_decoded_data = encoder.progressive_decode(components, level_elements[l], level_max_exp[l], prev_num_bp, curr_num_bp - prev_num_bp, l);
+                                    T * level_decoded_data = encoder.progressive_decode(components, level_elements[l], level_max_exp[l], prev_num_bp, curr_num_bp - prev_num_bp, l);
+                                    // debug
+                                    // std::string filename = "decoded_data_level_" + std::to_string(l) + ".dat";
+                                    // MGARD::writefile(filename.c_str(), level_decoded_data, level_elements[l]);
+                                    // std::cout << level_elements[l] << std::endl;
+                                    // int agg_block_id = level_block_aggregation_map[l][block_id].agg_block_id;
+                                    // auto compressed_size = level_agg_block_bp_sizes[l][agg_block_id][prev_num_bp];
+                                    // std::cout << "size = " << compressed_size << std::endl;
+                                    // for(int i=0; i<compressed_size; i++){
+                                    //     std::cout << +components[0][i] << " ";
+                                    // }
+                                    // std::cout << std::endl;
+                                    // exit(0);
                                     const std::vector<uint32_t>& prev_dims = (l == 0) ? dims_dummy : level_dims[i - 1];
-                                    interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data(), this->strides);                                    
+                                    interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, z_data_pos, this->strides);                                    
                                 }
                             }
+                            printf("recompose block %d\n", block_id);
                             decomposer.recompose(z_data_pos, reconstruct_dimensions, target_level, this->strides);
+                            exit(0);
                         }
                         block_id ++;
                         z_data_pos += block_size;
