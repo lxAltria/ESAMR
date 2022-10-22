@@ -110,7 +110,11 @@ namespace MDR {
             // buffer is used to store bitplanes
             // buffer layout: [B1P1 B2P1 B3P1 ..., B1P2 B2P2 B3P2 ...]
             // TODO: explore [B1P1 B1P2 ..., B2P1 B2P2 ..., B3P1 B3P2 ...]
-            uint8_t * buffer = (uint8_t *) malloc(SEGMENT_SIZE * 2 * sizeof(T));
+            uint32_t num_elements = 1;
+            for(const auto& dim:dims){
+                num_elements *= dim;
+            }
+            uint8_t * buffer = (uint8_t *) malloc(num_elements * sizeof(T));
             std::vector<int> bitplane_sizes(num_blocks[0]*num_blocks[1]*num_blocks[2], 0);
             int segment_count = 0;
             print_vec(level_offset);
@@ -260,7 +264,7 @@ namespace MDR {
                                 if(current_size > SEGMENT_SIZE){
                                     level_component.push_back(level_component_buffer);
                                     level_size.push_back(current_size);
-                                    level_component_buffer = (uint8_t *) malloc(2*SEGMENT_SIZE);
+                                    level_component_buffer = (uint8_t *) malloc(2*SEGMENT_SIZE*sizeof(T));
                                     level_merge_count.push_back(merge_count);
                                     index += merge_count;
                                     // printf("index = %d\n", index);
