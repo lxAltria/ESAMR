@@ -25,6 +25,7 @@ namespace MDR {
                     if(block_size > dims[i]) block_size = dims[i];
                 }
             }
+            block_size = 50;
             this->block_size = block_size;
             this->num_bitplanes = num_bitplanes;
             num_blocks = std::vector<uint32_t>(dims.size());
@@ -52,6 +53,7 @@ namespace MDR {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dims) + sizeof(uint8_t) + sizeof(uint8_t)
                             + sizeof(uint8_t) + get_size(level_max_exp) + get_size(level_merge_counts) 
                             + get_size(level_squared_errors) 
+                            + get_size(level_aggregation_granularity)
                             // + get_size(level_sizes) 
                             + get_size(level_num) + get_size(level_agg_block_bp_sizes); // level information
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
@@ -64,10 +66,11 @@ namespace MDR {
             serialize(level_max_exp, metadata_pos); 
             serialize(level_merge_counts, metadata_pos);
             serialize(level_squared_errors, metadata_pos);
+            serialize(level_aggregation_granularity, metadata_pos);
             // serialize(level_sizes, metadata_pos);
             serialize(level_num, metadata_pos);
             serialize(level_agg_block_bp_sizes, metadata_pos);
-            printf("Write metadata: size = %d, accumulative size = %d\n", metadata_size, metadata_pos - metadata);
+            printf("Write metadata: size = %u, accumulative size = %ld\n", metadata_size, metadata_pos - metadata);
             writer.write_metadata(metadata, metadata_size);
             free(metadata);
 
@@ -88,6 +91,7 @@ namespace MDR {
             const std::vector<uint32_t> dims_dummy(dims.size(), 0);
             decomposer.decompose(data, block_dims, target_level, this->strides);
             // std::cout << "decompose done" << std::endl;
+            // print_vec(block_dims);
             // print_vec(level_elements);
             T * cur_buffer_pos = buffer_pos;
             for(int l=0; l<=target_level; l++){
@@ -126,6 +130,7 @@ namespace MDR {
             level_merge_counts.clear();
             level_agg_block_bp_sizes.clear();
             level_sizes.clear();
+            level_aggregation_granularity.clear();
             for(int l=0; l<=target_level; l++){
                 std::cout << "level " << l << std::endl;
                 std::vector<uint8_t*> level_component;
@@ -297,6 +302,7 @@ namespace MDR {
                 level_components.push_back(level_component);
                 level_agg_block_bp_sizes.push_back(block_bp_sizes);
                 level_sizes.push_back(level_size);
+                level_aggregation_granularity.push_back(aggregation_granularity);
                 // check whether to change aggregation_size
                 if(segment_count){
                     aggregation_granularity *= 2;
@@ -338,7 +344,7 @@ namespace MDR {
             T * buffer = (T *) malloc(max_num_block_elements * total_num_blocks * sizeof(T));
             std::cout << "max_num_block_elements = " << max_num_block_elements << ", total_num_blocks = " << total_num_blocks << std::endl;
             T * buffer_pos = buffer;
-            // int block_id = 0;
+            int block_id = 0;
             T * x_data_pos = data.data();
             for(int i=0; i<nx; i++){
                 block_dims[0] = (i < nx - 1) ? block_size : (dims[0] - i*block_size);
@@ -348,14 +354,15 @@ namespace MDR {
                     T * z_data_pos = y_data_pos;
                     for(int k=0; k<nz; k++){
                         block_dims[2] = (k < nz - 1) ? block_size : (dims[2] - k*block_size);
-                        // print_vec(block_dims);
-                        // decompose and interleave data in each block
-                        decompose_and_interleave(z_data_pos, target_level, block_dims, max_level_dims, max_level_elements, buffer_pos);
-                        // std::cout << "block decompose and interleave done" << std::endl;
+                        std::cout << "block " << block_id << ": "; 
+                        print_vec(block_dims);
                         auto level_dims = compute_level_dims(block_dims, target_level);
+                        // decompose and interleave data in each block
+                        decompose_and_interleave(z_data_pos, target_level, block_dims, level_dims, max_level_elements, buffer_pos);
+                        // std::cout << "block decompose and interleave done" << std::endl;
                         auto level_elements = compute_level_elements(level_dims, target_level);
                         block_level_elements.push_back(level_elements);
-                        // block_id ++;
+                        block_id ++;
                         buffer_pos += max_num_block_elements;
                         z_data_pos += block_size;
                     }
@@ -380,7 +387,7 @@ namespace MDR {
             level_num = writer.write_level_components(level_components, level_sizes, level_merge_counts);
             write_metadata();
             // free level components
-            // print_vec("merge counts", level_merge_counts);
+            print_vec("merge counts", level_merge_counts);
             print_vec("level_sizes", level_sizes);
             for(int i=0; i<=target_level; i++){
                 print_vec("level_agg_block_bp_sizes", level_agg_block_bp_sizes[i]);
@@ -410,6 +417,7 @@ namespace MDR {
         std::vector<uint32_t> dims;
         // std::vector<T> level_error_bounds;
         std::vector<int> level_max_exp;
+        std::vector<int> level_aggregation_granularity;
         std::vector<std::vector<int>> level_merge_counts;
         // std::vector<std::vector<double>> level_squared_errors;
         std::vector<std::vector<std::vector<double>>> level_squared_errors; // L x b x P

@@ -45,11 +45,12 @@ namespace MDR {
             // TODO: interpret retrieve sizes for each block
             // return retrieved_blocks: retrieved_blocks[l] means required block ids in level l
             //        & level_block_num_bitplanes
-            int target_level = 4;
+            int target_level = level_max_exp.size() - 1;
             printf("interpret retrieved_blocks\n");
             std::vector<std::vector<int>> level_retrieved_blocks;
             {
                 for(int l=0; l<=target_level; l++){
+                    print_vec("level_block_merge_counts", level_block_merge_counts[l]);
                     std::vector<int> retrieved_blocks;
                     auto aggregation_granularity = level_aggregation_granularity[l];
                     // compute number of aggregations based on aggregation granularity
@@ -57,6 +58,7 @@ namespace MDR {
                     int agg_nx = (num_blocks[0] < aggregation_granularity) ? num_blocks[0] : aggregation_granularity;
                     int agg_ny = (num_blocks[1] < aggregation_granularity) ? num_blocks[1] : aggregation_granularity;
                     int agg_nz = (num_blocks[2] < aggregation_granularity) ? num_blocks[2] : aggregation_granularity;
+                    printf("level = %d, aggregation_granularity = %d: %d %d %d\n", l, aggregation_granularity, agg_nx, agg_ny, agg_nz);
                     for(int i=0; i<agg_nx*agg_ny*agg_nz; i++){
                         retrieved_blocks.push_back(i);
                         level_block_num_segments[l][i] = level_block_merge_counts[l][i].size();
@@ -67,6 +69,10 @@ namespace MDR {
                     level_retrieved_blocks.push_back(retrieved_blocks);
                 }
             }
+            print_vec("level_retrieved_blocks", level_retrieved_blocks);
+            print_vec("level_block_num_segments", level_block_num_segments);
+            print_vec("level_block_num_bitplanes", level_block_num_bitplanes);
+            // exit(0);
             printf("prepare level components\n");
             // prepare level components
             auto total_num_blocks = num_blocks[0] * num_blocks[1] * num_blocks[2];
@@ -173,6 +179,7 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_max_exp);
             deserialize(metadata_pos, num_levels, level_merge_counts);
             deserialize(metadata_pos, num_levels, level_squared_errors);
+            deserialize(metadata_pos, num_levels, level_aggregation_granularity);
             // deserialize(metadata_pos, num_levels, level_sizes);
             deserialize(metadata_pos, num_levels, level_num);
             deserialize(metadata_pos, num_levels, level_agg_block_bp_sizes);
@@ -191,8 +198,7 @@ namespace MDR {
             // print_vec("merge counts", level_merge_counts);
             // print_vec("sizes", level_sizes);
             // print_vec("merged errors", level_squared_errors);
-            // compute level_aggregation_granularity and level_block_merge_counts
-            level_aggregation_granularity.clear();
+            // compute level_block_merge_counts
             level_block_merge_counts.clear();
             for(int i=0; i<num_levels; i++){
                 int bp_num = 0;
@@ -210,7 +216,6 @@ namespace MDR {
                         agg_block_id ++;
                     }
                 }
-                level_aggregation_granularity.push_back(sqrt(agg_block_id));
                 level_block_merge_counts.push_back(block_merge_counts);
             }
             build_block_aggregation_map();
@@ -455,6 +460,7 @@ namespace MDR {
                                 }
                             }
                             printf("recompose block %d\n", block_id);
+                            print_vec(block_dims);
                             // std::cout << reconstruct_dimensions[0] << " " << reconstruct_dimensions[1] << " " << reconstruct_dimensions[2] << std::endl;
                             // printf("target_level = %d\n", target_level);
                             decomposer.recompose(z_data_pos, reconstruct_dimensions, target_level, this->strides);
