@@ -142,6 +142,7 @@ namespace MDR {
                         }
                         bp_offset += block_merge_counts[agg_block_id][i];
                     }
+                    retriever.release();
                     // exit(0);                    
                 }
                 level_block_components.push_back(block_components);

@@ -95,6 +95,7 @@ namespace MDR {
                     fread(buffer, sizeof(uint8_t), level_sizes[i][j], file);
                     fclose(file);
                     level_component.push_back(buffer);
+                    retrieved_level_components.push_back(buffer);
                 }
             }
             return level_components;
@@ -111,7 +112,12 @@ namespace MDR {
             return metadata;
         }
 
-        void release(){}
+        void release(){
+            for(int i=0; i<retrieved_level_components.size(); i++){
+                free(retrieved_level_components[i]);
+            }
+            retrieved_level_components.clear();
+        }
 
         ~DirectFileRetriever(){}
 
@@ -121,6 +127,7 @@ namespace MDR {
     protected:
         std::string metadata_file;
         std::string data_name;
+        std::vector<uint8_t*> retrieved_level_components;
     };
 
     // A retriever that reads multiblock components
@@ -140,6 +147,7 @@ namespace MDR {
                 fread(buffer, sizeof(uint8_t), segment_sizes[i], file);
                 fclose(file);
                 level_segments.push_back(buffer);
+                retrieved_level_components.push_back(buffer);
             }
             return level_segments;
         }
