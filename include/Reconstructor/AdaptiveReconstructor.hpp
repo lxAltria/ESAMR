@@ -172,8 +172,8 @@ namespace MDR {
             uint8_t const * metadata_pos = metadata;
             uint8_t num_dims = *(metadata_pos ++);
             deserialize(metadata_pos, num_dims, dims);
+            deserialize(metadata_pos, num_dims, block_sizes);
             this->num_bitplanes = *(metadata_pos ++);
-            this->block_size = *(metadata_pos ++);
             num_levels = *(metadata_pos ++);
             std::vector<std::vector<int>> level_merge_counts;
             std::vector<std::vector<std::vector<double>>> level_squared_errors;
@@ -188,7 +188,7 @@ namespace MDR {
             // read done
             num_blocks = std::vector<uint32_t>(dims.size());
             for(int i=0; i<dims.size(); i++){
-                num_blocks[i] = (dims[i] - 1) / block_size + 1;
+                num_blocks[i] = (dims[i] - 1) / block_sizes[i] + 1;
             }
             strides = std::vector<uint32_t>(dims.size());
             uint32_t stride = 1;
@@ -293,13 +293,13 @@ namespace MDR {
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
             auto nz = num_blocks[2];
-            std::vector<uint32_t> block_dims(3, block_size);
+            std::vector<uint32_t> block_dims(block_sizes);
             for(int i=0; i<nx; i++){
-                block_dims[0] = (i < nx - 1) ? block_size : (dims[0] - i*block_size);
+                block_dims[0] = (i < nx - 1) ? block_sizes[0] : (dims[0] - i*block_sizes[0]);
                 for(int j=0; j<ny; j++){
-                    block_dims[1] = (j < ny - 1) ? block_size : (dims[1] - j*block_size);
+                    block_dims[1] = (j < ny - 1) ? block_sizes[1] : (dims[1] - j*block_sizes[1]);
                     for(int k=0; k<nz; k++){
-                        block_dims[2] = (k < nz - 1) ? block_size : (dims[2] - k*block_size);
+                        block_dims[2] = (k < nz - 1) ? block_sizes[2] : (dims[2] - k*block_sizes[2]);
                         auto level_dims = compute_level_dims(block_dims, num_levels - 1);
                         auto level_elements = compute_level_elements(level_dims, num_levels - 1);
                         block_level_dims.push_back(level_dims);
@@ -409,14 +409,15 @@ namespace MDR {
         // reconstruct data based on given level components
         bool reconstruct(uint8_t target_level, const std::vector<std::vector<uint8_t>>& prev_level_block_num_bitplanes, bool progressive=true){
             memset(data.data(), 0, data.size() * sizeof(T));
-            std::cout << "target_level = " << +target_level << ", block_size = " << block_size << std::endl;
+            std::cout << "target_level = " << +target_level << std::endl;
+            std::cout << "block_sizes = " << block_sizes[0] << " " << block_sizes[1] << " " << block_sizes[2] << " " << std::endl;
             print_vec(num_blocks);
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
             auto nz = num_blocks[2];
             uint32_t total_num_blocks = nx * ny * nz;
-            std::vector<uint32_t> block_dims(3, block_size);
-            uint32_t max_num_block_elements = block_size * block_size * block_size;
+            std::vector<uint32_t> block_dims(block_sizes);
+            uint32_t max_num_block_elements = block_sizes[0] * block_sizes[1] * block_sizes[2];
             auto max_level_dims = compute_level_dims(block_dims, target_level);
             auto max_level_elements = compute_level_elements(max_level_dims, target_level);
             std::vector<std::vector<uint32_t>> level_block_elements;
@@ -431,13 +432,13 @@ namespace MDR {
             T * buffer_pos = buffer;
             T * x_data_pos = data.data();
             for(int i=0; i<nx; i++){
-                block_dims[0] = (i < nx - 1) ? block_size : (dims[0] - i*block_size);
+                block_dims[0] = (i < nx - 1) ? block_sizes[0] : (dims[0] - i*block_sizes[0]);
                 T * y_data_pos = x_data_pos;
                 for(int j=0; j<ny; j++){
-                    block_dims[1] = (j < ny - 1) ? block_size : (dims[1] - j*block_size);
+                    block_dims[1] = (j < ny - 1) ? block_sizes[1] : (dims[1] - j*block_sizes[1]);
                     T * z_data_pos = y_data_pos;
                     for(int k=0; k<nz; k++){
-                        block_dims[2] = (k < nz - 1) ? block_size : (dims[2] - k*block_size);
+                        block_dims[2] = (k < nz - 1) ? block_sizes[2] : (dims[2] - k*block_sizes[2]);
                         if(!converged[block_id]){
                             // decompose and interleave data in each block
                             // print_vec(block_dims);
@@ -482,11 +483,11 @@ namespace MDR {
                             decomposer.recompose(z_data_pos, reconstruct_dimensions, target_level, this->strides);
                         }
                         block_id ++;
-                        z_data_pos += block_size;
+                        z_data_pos += block_sizes[2];
                     }
-                    y_data_pos += block_size * dims[2];
+                    y_data_pos += block_sizes[1] * dims[2];
                 }
-                x_data_pos += block_size * dims[1] * dims[2];
+                x_data_pos += block_sizes[0] * dims[1] * dims[2];
             }
             return true;
         }
@@ -519,8 +520,8 @@ namespace MDR {
         std::vector<std::vector<std::vector<uint32_t>>> block_level_dims;
         std::vector<std::vector<uint32_t>> block_level_elements;
         std::vector<uint32_t> strides;
+        std::vector<uint32_t> block_sizes;
         uint8_t num_levels = 0;
-        int block_size = 0;
         int num_bitplanes = 0;
         int num_elements = 0;
         int current_level = 0;

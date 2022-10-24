@@ -18,19 +18,18 @@ namespace MDR {
         AdaptiveRefactor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorCollector collector, Writer writer)
             : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), collector(collector), writer(writer) {}
 
-        void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, uint32_t block_size=0){
-            if(block_size == 0){
-                block_size = dims[0];
+        void refactor(T const * data_, const std::vector<uint32_t>& dims, uint8_t target_level, uint8_t num_bitplanes, std::vector<uint32_t> block_sizes=std::vector<uint32_t>()){
+            if(block_sizes.size() == 0){
+                auto block_size = dims[0];
                 for(int i=1; i<dims.size(); i++){
                     if(block_size > dims[i]) block_size = dims[i];
                 }
+                this->block_sizes = std::vector<uint32_t>(dims.size(), block_size);
             }
-            block_size = 80;
-            this->block_size = block_size;
             this->num_bitplanes = num_bitplanes;
             num_blocks = std::vector<uint32_t>(dims.size());
             for(int i=0; i<dims.size(); i++){
-                num_blocks[i] = (dims[i] - 1) / block_size + 1;
+                num_blocks[i] = (dims[i] - 1) / this->block_sizes[i] + 1;
             }
             strides = std::vector<uint32_t>(dims.size());
             uint32_t stride = 1;
@@ -50,7 +49,8 @@ namespace MDR {
         }
 
         void write_metadata() const {
-            uint32_t metadata_size = sizeof(uint8_t) + get_size(dims) + sizeof(uint8_t) + sizeof(uint8_t)
+            uint32_t metadata_size = sizeof(uint8_t) + get_size(dims) + sizeof(uint8_t)
+                            + get_size(block_sizes)
                             + sizeof(uint8_t) + get_size(level_max_exp) + get_size(level_merge_counts) 
                             + get_size(level_squared_errors) 
                             + get_size(level_aggregation_granularity)
@@ -60,8 +60,9 @@ namespace MDR {
             uint8_t * metadata_pos = metadata; 
             *(metadata_pos ++) = (uint8_t) dims.size(); // dimensions
             serialize(dims, metadata_pos); 
+            serialize(block_sizes, metadata_pos); 
+            // *(metadata_pos ++) = block_size; // TODO: use different block size on different dimensions 
             *(metadata_pos ++) = num_bitplanes;
-            *(metadata_pos ++) = block_size; // TODO: use different block size on different dimensions 
             *(metadata_pos ++) = (uint8_t) level_max_exp.size(); // number of levels
             serialize(level_max_exp, metadata_pos); 
             serialize(level_merge_counts, metadata_pos);
@@ -345,14 +346,16 @@ namespace MDR {
                 std::cerr << "Target level is higher than " << max_level << std::endl;
                 return false;
             }
-            std::cout << "target_level = " << +target_level << ", block_size = " << block_size << std::endl;
+            std::cout << "target_level = " << +target_level << std::endl;
+            std::cout << "block_sizes = " << block_sizes[0] << " " << block_sizes[1] << " " << block_sizes[2] << " " << std::endl;
             print_vec(num_blocks);
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
             auto nz = num_blocks[2];
             auto total_num_blocks = nx * ny * nz;
-            std::vector<uint32_t> block_dims(3, block_size);
-            uint32_t max_num_block_elements = block_size * block_size * block_size;
+            // std::vector<uint32_t> block_dims(3, block_size);
+            std::vector<uint32_t> block_dims(block_sizes);
+            uint32_t max_num_block_elements = block_sizes[0] * block_sizes[1] * block_sizes[2];
             auto max_level_dims = compute_level_dims(block_dims, target_level);
             auto max_level_elements = compute_level_elements(max_level_dims, target_level);
             std::vector<std::vector<uint32_t>> block_level_elements;
@@ -366,13 +369,13 @@ namespace MDR {
             int block_id = 0;
             T * x_data_pos = data.data();
             for(int i=0; i<nx; i++){
-                block_dims[0] = (i < nx - 1) ? block_size : (dims[0] - i*block_size);
+                block_dims[0] = (i < nx - 1) ? block_sizes[0] : (dims[0] - i*block_sizes[0]);
                 T * y_data_pos = x_data_pos;
                 for(int j=0; j<ny; j++){
-                    block_dims[1] = (j < ny - 1) ? block_size : (dims[1] - j*block_size);
+                    block_dims[1] = (j < ny - 1) ? block_sizes[1] : (dims[1] - j*block_sizes[1]);
                     T * z_data_pos = y_data_pos;
                     for(int k=0; k<nz; k++){
-                        block_dims[2] = (k < nz - 1) ? block_size : (dims[2] - k*block_size);
+                        block_dims[2] = (k < nz - 1) ? block_sizes[2] : (dims[2] - k*block_sizes[2]);
                         std::cout << "block " << block_id << ": "; 
                         print_vec(block_dims);
                         auto level_dims = compute_level_dims(block_dims, target_level);
@@ -383,11 +386,11 @@ namespace MDR {
                         block_level_elements.push_back(level_elements);
                         block_id ++;
                         buffer_pos += max_num_block_elements;
-                        z_data_pos += block_size;
+                        z_data_pos += block_sizes[2];
                     }
-                    y_data_pos += block_size * dims[2];
+                    y_data_pos += block_sizes[1] * dims[2];
                 }
-                x_data_pos += block_size * dims[1] * dims[2];
+                x_data_pos += block_sizes[0] * dims[1] * dims[2];
             }
             std::cout << "decompose and interleave done" << std::endl;
             std::vector<uint32_t> level_offset;
@@ -452,7 +455,7 @@ namespace MDR {
         const uint32_t SEGMENT_SIZE = 1024 * 1024; // 1 MB
         std::vector<uint32_t> num_blocks;
         std::vector<uint32_t> strides;
-        int block_size;
+        std::vector<uint32_t> block_sizes;
         int num_bitplanes;
     };
 }
