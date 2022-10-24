@@ -124,6 +124,7 @@ namespace MDR {
                             //     std::cout << +precision_segment[i] << " ";
                             // }
                             // std::cout << std::endl;
+                            // exit(0);
                             decompressed_segments.push_back(precision_segment);
                             // prepare each precision fragment
                             const uint8_t * bitplane_pos = precision_segment;
@@ -131,7 +132,7 @@ namespace MDR {
                                 auto block_id = global_blocks[j];
                                 auto block_num_element = block_level_elements[block_id][l];  
                                 // TODO: change to adaptive computation with respect to T_stream
-                                auto block_stream_size = ((block_num_element - 1) / (UINT8_BITS*4) + 1) * sizeof(uint32_t);                 
+                                auto block_stream_size = compute_bitplane_size(block_num_element);                 
                                 // printf("block_id = %d, block_num_element = %d, block_stream_size = %d\n", block_id, block_num_element, block_stream_size);
                                 if(!converged[block_id]){
                                     block_components[block_id].push_back(bitplane_pos);
@@ -450,11 +451,25 @@ namespace MDR {
                                     auto curr_num_bp = level_block_num_bitplanes[l][block_id];
                                     int agg_block_id = level_block_aggregation_map[l][block_id].agg_block_id;
                                     // debug
-                                    // if(block_id == 1){
+                                    // if(block_id == 0){
                                     //     std::cout << "l = " << l << ", block_id = " << block_id << ", agg_block_id = " << agg_block_id << std::endl;
                                     //     std::cout << "level_elements = " << level_elements[l] << ", prev_num_bp = " << +prev_num_bp << ", curr_num_bp = " << +curr_num_bp << std::endl;
+                                    //     std::cout << "level_agg_block_bp_sizes = " << level_agg_block_bp_sizes[l][block_id][0] << std::endl;
+                                    //     for(int i=0; i<level_agg_block_bp_sizes[l][block_id][0]; i++){
+                                    //         std::cout << +components[0][i] << " ";
+                                    //     }
+                                    //     std::cout << std::endl;
                                     // }
                                     T * level_decoded_data = encoder.progressive_decode(components, level_elements[l], level_max_exp[l], prev_num_bp, curr_num_bp - prev_num_bp, l);
+                                    // if(block_id == 0){
+                                    //     std::cout << "l = " << l << ", block_id = " << block_id << ", agg_block_id = " << agg_block_id << std::endl;
+                                    //     std::cout << "level_elements = " << level_elements[l] << ", prev_num_bp = " << +prev_num_bp << ", curr_num_bp = " << +curr_num_bp << std::endl;
+                                    //     for(int i=0; i<level_elements[l]; i++){
+                                    //         std::cout << level_decoded_data[i] << " ";
+                                    //     }
+                                    //     std::cout << std::endl;
+                                    //     exit(0);
+                                    // }
                                     const std::vector<uint32_t>& prev_dims = (l == 0) ? dims_dummy : level_dims[l - 1];
                                     interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[l], prev_dims, z_data_pos, this->strides);
                                     free(level_decoded_data);
@@ -474,6 +489,10 @@ namespace MDR {
                 x_data_pos += block_size * dims[1] * dims[2];
             }
             return true;
+        }
+
+        inline uint32_t compute_bitplane_size(uint32_t block_num_element){
+            return ((block_num_element - 1) / (UINT8_BITS*4) + 1) * sizeof(uint32_t);             
         }
 
         Decomposer decomposer;

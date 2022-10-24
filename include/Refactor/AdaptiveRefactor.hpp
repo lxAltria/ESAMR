@@ -25,7 +25,7 @@ namespace MDR {
                     if(block_size > dims[i]) block_size = dims[i];
                 }
             }
-            block_size = 50;
+            block_size = 80;
             this->block_size = block_size;
             this->num_bitplanes = num_bitplanes;
             num_blocks = std::vector<uint32_t>(dims.size());
@@ -90,9 +90,9 @@ namespace MDR {
                                         const std::vector<uint32_t>& level_elements, T * buffer_pos){
             const std::vector<uint32_t> dims_dummy(dims.size(), 0);
             decomposer.decompose(data, block_dims, target_level, this->strides);
-            // std::cout << "decompose done" << std::endl;
-            // print_vec(block_dims);
-            // print_vec(level_elements);
+            std::cout << "decompose done" << std::endl;
+            print_vec(block_dims);
+            print_vec(level_elements);
             T * cur_buffer_pos = buffer_pos;
             for(int l=0; l<=target_level; l++){
                 const std::vector<uint32_t>& prev_dims = (l == 0) ? dims_dummy : level_dims[l - 1];
@@ -119,7 +119,6 @@ namespace MDR {
                 num_elements *= dim;
             }
             uint8_t * buffer = (uint8_t *) malloc(num_elements * sizeof(T));
-            std::vector<int> bitplane_sizes(num_blocks[0]*num_blocks[1]*num_blocks[2], 0);
             int segment_count = 0;
             print_vec(level_offset);
             // aggregation_granularity indicates how many subregions are used along each dimension
@@ -189,6 +188,21 @@ namespace MDR {
                             // buffer is used to store the encoded data
                             std::cout << "aggregation num_blocks: ";
                             std::cout << agg_actual_block_size_nx << " " << agg_actual_block_size_ny << " " << agg_actual_block_size_nz << std::endl;
+                            // compute bitplane offsets inside each aggregation block
+                            // std::vector<uint32_t> bitplane_sizes(num_aggregation);
+                            std::vector<uint32_t> bitplane_sizes;
+                            uint32_t aggregated_bitplane_size = 0;
+                            for(int ii=0; ii<agg_actual_block_size_nx; ii++){
+                                for(int jj=0; jj<agg_actual_block_size_ny; jj++){
+                                    for(int kk=0; kk<agg_actual_block_size_nz; kk++){
+                                        int block_id = (block_offset_x + ii) * num_blocks[1] * num_blocks[2] + (block_offset_y + jj) * num_blocks[2] + (block_offset_z + kk);
+                                        auto num_level_elements = block_level_elements[block_id][l];
+                                        auto bitplane_size = compute_bitplane_size(num_level_elements);
+                                        bitplane_sizes.push_back(bitplane_size);
+                                        aggregated_bitplane_size += bitplane_size;
+                                    }
+                                }
+                            }
                             // record the errors in an aggregation block
                             auto agg_block_sq_error = std::vector<std::vector<double>>(num_bitplanes + 1, std::vector<double>());
                             uint8_t * bitplane_pos = buffer;
@@ -208,7 +222,7 @@ namespace MDR {
                                         std::vector<double> sq_err;
                                         // std::cout << "start encoding: " << "offset = " << data_pos - data << ", num_level_elements = " << num_level_elements << "\n";
                                         auto streams = encoder.encode(data_pos, num_level_elements, level_exp, num_bitplanes, stream_sizes, sq_err);
-                                        bitplane_sizes[aggregation_id] = stream_sizes[0];
+                                        // bitplane_sizes[aggregation_id] = stream_sizes[0];
                                         // record all errors
                                         for(int bp=0; bp<=num_bitplanes; bp++){
                                             agg_block_sq_error[bp].push_back(sq_err[bp]);
@@ -216,8 +230,13 @@ namespace MDR {
                                         // copy data for alignment on bitplanes
                                         uint8_t * current_bitplane_pos = bitplane_pos;
                                         for(int bp=0; bp<num_bitplanes; bp++){
+                                            if(stream_sizes[bp] != bitplane_sizes[aggregation_id]){
+                                                std::cout << bp << ": " << stream_sizes[bp] << " " << bitplane_sizes[aggregation_id] << std::endl;
+                                                exit(0);
+                                            }
                                             memcpy(current_bitplane_pos, streams[bp], stream_sizes[bp]);
-                                            current_bitplane_pos += bitplane_sizes[aggregation_id] * num_aggregation;
+                                            // current_bitplane_pos += bitplane_sizes[aggregation_id] * num_aggregation;
+                                            current_bitplane_pos += aggregated_bitplane_size;
                                             free(streams[bp]);
                                         }
                                         bitplane_pos += bitplane_sizes[aggregation_id];
@@ -234,10 +253,10 @@ namespace MDR {
                             // TODO: bitplane size is larger than SEGMENT_SIZE 
                             uint8_t * level_component_buffer = (uint8_t *) malloc(2*SEGMENT_SIZE);
                             // compress each bitplane
-                            int aggregated_bitplane_size = 0;
-                            for(int i=0; i<num_aggregation; i++){
-                                aggregated_bitplane_size += bitplane_sizes[i];
-                            }
+                            // int aggregated_bitplane_size = 0;
+                            // for(int i=0; i<num_aggregation; i++){
+                            //     aggregated_bitplane_size += bitplane_sizes[i];
+                            // }
                             uint32_t current_size = 0;
                             int merge_count = 0;
                             int index = 0; // current bitplane index
@@ -405,6 +424,10 @@ namespace MDR {
                 }
             }
             return true;
+        }
+
+        inline uint32_t compute_bitplane_size(uint32_t block_num_element){
+            return ((block_num_element - 1) / (UINT8_BITS*4) + 1) * sizeof(uint32_t);             
         }
 
         Decomposer decomposer;
