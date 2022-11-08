@@ -88,7 +88,7 @@ namespace MDR {
             for(int i=0; i<level_sizes.size(); i++){
                 std::vector<const uint8_t*> level_component;
                 for(int j=prev_level_num_bitplanes[i]; j<level_num_bitplanes[i]; j++){
-                    std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) merged bitplanes from level " << i << std::endl;
+                    // std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) merged bitplanes from level " << i << std::endl;
                     std::string filename = data_name + "_" + std::to_string(i) + "_" + std::to_string(j);
                     FILE * file = fopen(filename.c_str(), "r");
                     uint8_t * buffer = (uint8_t *) malloc(level_sizes[i][j]);
@@ -141,7 +141,7 @@ namespace MDR {
             std::vector<const uint8_t*> level_segments;
             for(int i=start; i<end; i++){
                 std::string filename = data_name + "_L" + std::to_string(level) + "_B" + std::to_string(block) + "_S" + std::to_string(i);
-                printf("file = %s\n", filename.c_str());
+                // printf("file = %s\n", filename.c_str());
                 FILE * file = fopen(filename.c_str(), "r");
                 uint8_t * buffer = (uint8_t *) malloc(segment_sizes[i]);
                 fread(buffer, sizeof(uint8_t), segment_sizes[i], file);

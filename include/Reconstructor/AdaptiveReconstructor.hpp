@@ -23,7 +23,7 @@ namespace MDR {
         AdaptiveReconstructor(Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, SizeInterpreter interpreter, Retriever retriever)
             : decomposer(decomposer), interleaver(interleaver), encoder(encoder), compressor(compressor), interpreter(interpreter), retriever(retriever){
                 load_metadata();
-                uint32_t num_elements = 1;
+                num_elements = 1;
                 for(const auto& dim:dims){
                     num_elements *= dim;
                 }
@@ -52,18 +52,19 @@ namespace MDR {
             auto total_num_blocks = num_blocks[0] * num_blocks[1] * num_blocks[2];
             int target_level = level_max_exp.size() - 1;
             printf("interpret retrieved_blocks\n");
+            size_t retrieved_size = 0;
             std::vector<std::vector<int>> level_retrieved_blocks;
             {
                 // using a variational greedy based method
                 // the level-block components build a tree structure
                 // using greedy algorithm for each block
                 // compare adjustacent level by combining the impact of all related blocks
-                for(int l=0; l<=target_level; l++){
-                    print_vec("level_block_squared_errors", level_block_squared_errors[l]);
-                }
-                for(int l=0; l<=target_level; l++){
-                    print_vec("level_agg_block_sizes", level_agg_block_sizes[l]);
-                }
+                // for(int l=0; l<=target_level; l++){
+                //     print_vec("level_block_squared_errors", level_block_squared_errors[l]);
+                // }
+                // for(int l=0; l<=target_level; l++){
+                //     print_vec("level_agg_block_sizes", level_agg_block_sizes[l]);
+                // }
                 // build the hierarchical tree for aggregation blocks
                 // using set for construction and then convert to vectors
                 std::vector<std::vector<std::set<int>>> agg_block_hierarchy_set;
@@ -106,17 +107,16 @@ namespace MDR {
                     }
                     
                 }
-                for(int l=0; l<target_level; l++){
-                    printf("agg_block_hierarchy in level %d\n", l);
-                    for(int i=0; i<agg_block_hierarchy[l].size(); i++){
-                        for(const auto& val:agg_block_hierarchy[l][i]){
-                            std::cout << val << " ";
-                        }
-                        std::cout << std::endl;
-                    }
-                }
-                print_vec("reversed_agg_block_hierarchy", reversed_agg_block_hierarchy);
-
+                // for(int l=0; l<target_level; l++){
+                //     printf("agg_block_hierarchy in level %d\n", l);
+                //     for(int i=0; i<agg_block_hierarchy[l].size(); i++){
+                //         for(const auto& val:agg_block_hierarchy[l][i]){
+                //             std::cout << val << " ";
+                //         }
+                //         std::cout << std::endl;
+                //     }
+                // }
+                // print_vec("reversed_agg_block_hierarchy", reversed_agg_block_hierarchy);
                 // compute retrieved block using a greedy algorithm
                 std::vector<std::vector<double>> level_block_error_gain;
                 std::vector<std::vector<uint32_t>> level_block_fetch_size;
@@ -145,15 +145,6 @@ namespace MDR {
                     // iterate through all aggregation block in the level
                     for(int i=0; i<level_aggregation_block_map[l].size(); i++){
                         // check the efficiency of segment in current level
-                        // auto curr_num_segments = level_block_num_segments[l][i];
-                        // double error_gain_curr_level = 0;
-                        // uint32_t size_curr_level = level_agg_block_sizes[l][i][curr_num_segments];
-                        // for(const auto& block_id : level_aggregation_block_map[l][i]){
-                        //     if(!converged[block_id]){
-                        //         error_gain_curr_level += error_estimator.estimate_error_gain(0, level_block_squared_errors[l][block_id][curr_num_segments], level_block_squared_errors[l][block_id][curr_num_segments+1], l);
-                        //     }
-                        // }
-                        // double efficiency_curr_level = error_gain_curr_level / size_curr_level;
                         double error_gain_curr_level = 0;
                         uint32_t size_curr_level = 0;
                         double efficiency_curr_level = compute_efficiency(l, i, level_block_num_segments[l][i], level_aggregation_block_map[l][i], error_gain_curr_level, size_curr_level);
@@ -180,9 +171,9 @@ namespace MDR {
                         }
                     }
                 }
-                print_vec("level_block_error_gain", level_block_error_gain);
-                print_vec("level_block_fetch_size", level_block_fetch_size);
-                print_vec("level_block_fetch_option", level_block_fetch_option);
+                // print_vec("level_block_error_gain", level_block_error_gain);
+                // print_vec("level_block_fetch_size", level_block_fetch_size);
+                // print_vec("level_block_fetch_option", level_block_fetch_option);
                 double estimated_error = 0;
                 for(int l=0; l<=target_level; l++){
                     for(int i=0; i<total_num_blocks; i++){
@@ -195,7 +186,7 @@ namespace MDR {
                     level_retrieved_blocks_set.push_back(std::set<int>());
                 }
                 int count = 0;
-                std::cout << "estimated_error = " << estimated_error << std::endl;
+                // std::cout << "estimated_error = " << estimated_error << std::endl;
                 while(estimated_error > tolerance){
                     if(count > 2){
                         break;
@@ -220,19 +211,15 @@ namespace MDR {
                         else if(level_block_num_segments[level][agg_block_id] < level_block_merge_counts[level][agg_block_id].size()){
                             // retrieve current level when size is not exceeded
                             auto curr_num_segments = level_block_num_segments[level][agg_block_id];
-                            printf("retrieve L%d_B%d_S%d\n", level, agg_block_id, curr_num_segments);
+                            // increment total retrieved size
+                            retrieved_size += level_agg_block_sizes[level][agg_block_id][curr_num_segments];
+                            // printf("retrieve L%d_B%d_S%d\n", level, agg_block_id, curr_num_segments);
                             level_retrieved_blocks_set[level].insert(agg_block_id);
                             // update level_block_num_segments and level_block_num_bitplanes
                             auto bitplane_count = level_block_merge_counts[level][agg_block_id][curr_num_segments];
                             level_block_num_segments[level][agg_block_id] ++;
                             for(const auto& block_id : level_aggregation_block_map[level][agg_block_id]){
                                 level_block_num_bitplanes[level][block_id] += bitplane_count;
-                                // if(level_block_num_bitplanes[level][block_id] > 32){
-                                //     print_vec("level_block_merge_counts", level_block_merge_counts[level]);
-                                //     std::cout << level << " " << agg_block_id << " " << +curr_num_segments << std::endl;
-                                //     std::cout << level << " " << block_id << " " << bitplane_count << std::endl;
-                                //     exit(0);
-                                // }
                             }
                             // need to update efficiency
                             // printf("update efficiency\n");
@@ -291,31 +278,11 @@ namespace MDR {
                 for(int l=0; l<=target_level; l++){
                     level_retrieved_blocks.push_back(std::vector<int>(level_retrieved_blocks_set[l].begin(), level_retrieved_blocks_set[l].end()));
                 }
-                // print_vec("level_retrieved_blocks", level_retrieved_blocks);
-                // for(int l=0; l<=target_level; l++){
-                //     print_vec("level_block_merge_counts", level_block_merge_counts[l]);
-                //     std::vector<int> retrieved_blocks;
-                //     auto aggregation_granularity = level_aggregation_granularity[l];
-                //     // compute number of aggregations based on aggregation granularity
-                //     // agg_nx, agg_ny, agg_nz: number of aggregation blocks along each dimension
-                //     int agg_nx = (num_blocks[0] < aggregation_granularity) ? num_blocks[0] : aggregation_granularity;
-                //     int agg_ny = (num_blocks[1] < aggregation_granularity) ? num_blocks[1] : aggregation_granularity;
-                //     int agg_nz = (num_blocks[2] < aggregation_granularity) ? num_blocks[2] : aggregation_granularity;
-                //     printf("level = %d, aggregation_granularity = %d: %d %d %d\n", l, aggregation_granularity, agg_nx, agg_ny, agg_nz);
-                //     for(int i=0; i<agg_nx*agg_ny*agg_nz; i++){
-                //         retrieved_blocks.push_back(i);
-                //         level_block_num_segments[l][i] = level_block_merge_counts[l][i].size();
-                //     }
-                //     for(int i=0; i<num_blocks[0] * num_blocks[1] * num_blocks[2]; i++){
-                //         level_block_num_bitplanes[l][i] = 32;                        
-                //     }
-                //     level_retrieved_blocks.push_back(retrieved_blocks);
-                // }
             }
-            print_vec("level_retrieved_blocks", level_retrieved_blocks);
-            print_vec("prev_level_block_num_segments", prev_level_block_num_segments);
-            print_vec("level_block_num_segments", level_block_num_segments);
-            print_vec("prev_level_block_num_bitplanes", prev_level_block_num_bitplanes);
+            // print_vec("level_retrieved_blocks", level_retrieved_blocks);
+            // print_vec("prev_level_block_num_segments", prev_level_block_num_segments);
+            // print_vec("level_block_num_segments", level_block_num_segments);
+            // print_vec("prev_level_block_num_bitplanes", prev_level_block_num_bitplanes);
             print_vec("level_block_num_bitplanes", level_block_num_bitplanes);
             printf("prepare level components\n");
             // prepare level components
@@ -347,28 +314,26 @@ namespace MDR {
                     for(int i=0; i<prev_segments; i++){
                         bp_offset += block_merge_counts[agg_block_id][i];
                     }
-                    std::cout << "prev_segments = " << +prev_segments << ", curr_segments = " << +curr_segments << std::endl; 
+                    // std::cout << "prev_segments = " << +prev_segments << ", curr_segments = " << +curr_segments << std::endl; 
                     for(int i=prev_segments; i<curr_segments; i++){
                         // get id for blocks belonging to this aggregation block
                         const auto& global_blocks = aggregation_block_map.at(agg_block_id);
                         const uint8_t * compressed_data_pos = aggregated_level_segments[i - prev_segments];
                         // deal with each bitplane (which spans all blocks in the aggregation block)
                         // format: b1p1 b2p1 ... bnp1, b1p2 b2p2 ... bnp2, ...
-                        std::cout << "processing bitplanes in the segment\n";
+                        // std::cout << "processing bitplanes in the segment\n";
                         // std::cout << "level = " << l << ", agg_block_id = " << b << std::endl;
                         for(int bp=0; bp<block_merge_counts[agg_block_id][i]; bp++){
                             uint8_t * precision_segment = NULL;
-                            // if(l == 0){
-                            printf("level = %d, agg_block = %d, segment = %d, bitplane = %d\n", l, agg_block_id, i, bp + bp_offset);
-                            printf("agg_block_bp_size = %d\n", agg_block_bp_sizes[agg_block_id][bp + bp_offset]);
-                            // }
+                            // printf("level = %d, agg_block = %d, segment = %d, bitplane = %d\n", l, agg_block_id, i, bp + bp_offset);
+                            // printf("agg_block_bp_size = %d\n", agg_block_bp_sizes[agg_block_id][bp + bp_offset]);
                             // printf("offset = %ld\n", compressed_data_pos - aggregated_level_segments[i]);
                             // for(int i=0; i<agg_block_bp_sizes[agg_block_id][bp + bp_offset]; i++){
                             //     std::cout << +compressed_data_pos[i] << " ";
                             // }
                             // std::cout << std::endl;
                             auto decompressed_size = ZSTD::decompress(compressed_data_pos, agg_block_bp_sizes[agg_block_id][bp + bp_offset], &precision_segment);
-                            printf("decompressed_size = %d\n", decompressed_size);
+                            // printf("decompressed_size = %d\n", decompressed_size);
                             // for(int i=0; i<decompressed_size; i++){
                             //     std::cout << +precision_segment[i] << " ";
                             // }
@@ -397,6 +362,10 @@ namespace MDR {
                 }
                 level_block_components.push_back(block_components);
             }
+            total_retrieved_size += retrieved_size;
+            printf("Retrieved size = %lu\n", retrieved_size);
+            printf("Total retrieved size = %lu\n", total_retrieved_size);
+            printf("Ratio = %.4f\n", num_elements * sizeof(T) * 1.0 / total_retrieved_size);
             bool success = reconstruct(target_level, prev_level_block_num_bitplanes);
             printf("free decompressed data\n");
             for(int i=0; i<decompressed_segments.size(); i++){
@@ -660,7 +629,7 @@ namespace MDR {
             memset(data.data(), 0, data.size() * sizeof(T));
             std::cout << "target_level = " << +target_level << std::endl;
             std::cout << "block_sizes = " << block_sizes[0] << " " << block_sizes[1] << " " << block_sizes[2] << " " << std::endl;
-            print_vec(num_blocks);
+            // print_vec(num_blocks);
             auto nx = num_blocks[0];
             auto ny = num_blocks[1];
             auto nz = num_blocks[2];
@@ -700,33 +669,14 @@ namespace MDR {
                                     auto prev_num_bp = prev_level_block_num_bitplanes[l][block_id];
                                     auto curr_num_bp = level_block_num_bitplanes[l][block_id];
                                     int agg_block_id = level_block_aggregation_map[l][block_id].agg_block_id;
-                                    // debug
-                                    // if(block_id == 0){
-                                    //     std::cout << "l = " << l << ", block_id = " << block_id << ", agg_block_id = " << agg_block_id << std::endl;
-                                    //     std::cout << "level_elements = " << level_elements[l] << ", prev_num_bp = " << +prev_num_bp << ", curr_num_bp = " << +curr_num_bp << std::endl;
-                                    //     std::cout << "level_agg_block_bp_sizes = " << level_agg_block_bp_sizes[l][block_id][0] << std::endl;
-                                    //     for(int i=0; i<level_agg_block_bp_sizes[l][block_id][0]; i++){
-                                    //         std::cout << +components[0][i] << " ";
-                                    //     }
-                                    //     std::cout << std::endl;
-                                    // }
                                     T * level_decoded_data = encoder.progressive_decode(components, level_elements[l], level_max_exp[l], prev_num_bp, curr_num_bp - prev_num_bp, l);
-                                    // if(block_id == 0){
-                                    //     std::cout << "l = " << l << ", block_id = " << block_id << ", agg_block_id = " << agg_block_id << std::endl;
-                                    //     std::cout << "level_elements = " << level_elements[l] << ", prev_num_bp = " << +prev_num_bp << ", curr_num_bp = " << +curr_num_bp << std::endl;
-                                    //     for(int i=0; i<level_elements[l]; i++){
-                                    //         std::cout << level_decoded_data[i] << " ";
-                                    //     }
-                                    //     std::cout << std::endl;
-                                    //     exit(0);
-                                    // }
                                     const std::vector<uint32_t>& prev_dims = (l == 0) ? dims_dummy : level_dims[l - 1];
                                     interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[l], prev_dims, z_data_pos, this->strides);
                                     free(level_decoded_data);
                                 }
                             }
-                            printf("recompose block %d\n", block_id);
-                            print_vec(block_dims);
+                            // printf("recompose block %d\n", block_id);
+                            // print_vec(block_dims);
                             // std::cout << reconstruct_dimensions[0] << " " << reconstruct_dimensions[1] << " " << reconstruct_dimensions[2] << std::endl;
                             // printf("target_level = %d\n", target_level);
                             decomposer.recompose(z_data_pos, reconstruct_dimensions, target_level, this->strides);
@@ -786,6 +736,7 @@ namespace MDR {
         int num_bitplanes = 0;
         int num_elements = 0;
         int current_level = 0;
+        size_t total_retrieved_size = 0;
         std::vector<std::unordered_map<int, AggregationBlockInfo>> level_block_aggregation_map; // map global block to aggregation block
         std::vector<std::unordered_map<int, std::vector<int>>> level_aggregation_block_map;     // map aggregation block to global blocks
     };
