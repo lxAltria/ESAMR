@@ -174,25 +174,36 @@ namespace MDR {
                 // print_vec("level_block_error_gain", level_block_error_gain);
                 // print_vec("level_block_fetch_size", level_block_fetch_size);
                 // print_vec("level_block_fetch_option", level_block_fetch_option);
-                double estimated_error = 0;
-                for(int l=0; l<=target_level; l++){
-                    for(int i=0; i<total_num_blocks; i++){
-                        auto curr_num_segments = level_block_num_segments[l][i];
-                        estimated_error += error_estimator.estimate_error(level_block_squared_errors[l][i][curr_num_segments], l);
-                    }                    
-                }
                 std::vector<std::set<int>> level_retrieved_blocks_set;
                 for(int i=0; i<=target_level; i++){
                     level_retrieved_blocks_set.push_back(std::set<int>());
                 }
-                int count = 0;
-                // std::cout << "estimated_error = " << estimated_error << std::endl;
-                while(estimated_error > tolerance){
-                    if(count > 2){
-                        break;
+                std::vector<double> estimated_errors(total_num_blocks, 0);
+                for(int l=0; l<=target_level; l++){
+                    for(int i=0; i<total_num_blocks; i++){
+                        auto agg_block_id = level_block_aggregation_map[l][i].agg_block_id;
+                        auto curr_num_segments = level_block_num_segments[l][agg_block_id];
+                        estimated_errors[i] += error_estimator.estimate_error(level_block_squared_errors[l][i][curr_num_segments], l);
+                    }                    
+                }
+                int num_tolerance_met = 0;
+                for(int i=0; i<total_num_blocks; i++){
+                    if((estimated_errors[i] < tolerance) || converged[i]){
+                        num_tolerance_met ++;
                     }
-                    // std::cout << "round " << count << std::endl;
-                    count ++;
+                }
+                // std::cout << "estimated_error = " << estimated_error << std::endl;
+                while(num_tolerance_met < total_num_blocks){
+                    std::cout << "num_tolerance_met = " << num_tolerance_met << ", total_num_blocks = " << total_num_blocks << std::endl;
+                    // print_vec("level_block_num_bitplanes", level_block_num_bitplanes);
+                    // print_vec("level_block_fetch_option", level_block_fetch_option);
+                    // print_vec("level_block_fetch_size", level_block_fetch_size);
+                    // print_vec("level_block_error_gain", level_block_error_gain);
+                    if(level_block_error_gain[0][0] == 0){
+                        // exceed precision
+                        std::cerr << "precision cannot be satisfied\n";
+                        exit(0);
+                    }
                     // find the path to fetch options
                     // using a queue of <level, agg_block_id> pair
                     std::queue<std::pair<int, int>> agg_block_queue;
@@ -202,15 +213,20 @@ namespace MDR {
                         int level = agg_block_queue.front().first;
                         int agg_block_id = agg_block_queue.front().second;
                         agg_block_queue.pop();
+                        if(level_block_error_gain[level][agg_block_id] == 0){
+                            continue;
+                        }
                         if(level_block_fetch_option[level][agg_block_id]){
                             // need to retrieve next level
                             for(int i=0; i<agg_block_hierarchy[level][agg_block_id].size(); i++){
-                                agg_block_queue.push({level + 1, agg_block_hierarchy[level][agg_block_id][i]});
+                                // only involve blocks that have something to fetch  
+                                agg_block_queue.push({level + 1, agg_block_hierarchy[level][agg_block_id][i]});                                    
                             }
                         }
                         else if(level_block_num_segments[level][agg_block_id] < level_block_merge_counts[level][agg_block_id].size()){
                             // retrieve current level when size is not exceeded
                             auto curr_num_segments = level_block_num_segments[level][agg_block_id];
+                            printf("select L%d_B%d_S%d\n", level, agg_block_id, curr_num_segments);
                             // increment total retrieved size
                             retrieved_size += level_agg_block_sizes[level][agg_block_id][curr_num_segments];
                             // printf("retrieve L%d_B%d_S%d\n", level, agg_block_id, curr_num_segments);
@@ -219,7 +235,16 @@ namespace MDR {
                             auto bitplane_count = level_block_merge_counts[level][agg_block_id][curr_num_segments];
                             level_block_num_segments[level][agg_block_id] ++;
                             for(const auto& block_id : level_aggregation_block_map[level][agg_block_id]){
+                                // update bitplane count
                                 level_block_num_bitplanes[level][block_id] += bitplane_count;
+                                // update tolerance information
+                                if(!((estimated_errors[block_id] < tolerance) || converged[block_id])){
+                                    estimated_errors[block_id] -= error_estimator.estimate_error(level_block_squared_errors[level][block_id][curr_num_segments], level);
+                                    estimated_errors[block_id] += error_estimator.estimate_error(level_block_squared_errors[level][block_id][curr_num_segments+1], level);
+                                    if(estimated_errors[block_id] < tolerance){
+                                        num_tolerance_met ++;
+                                    }                                            
+                                }
                             }
                             // need to update efficiency
                             // printf("update efficiency\n");
@@ -245,33 +270,44 @@ namespace MDR {
                                         size_lower_level += level_block_fetch_size[l+1][agg_block_id];
                                     }                                    
                                 }
-                                if((!error_gain_curr_level) && (!error_gain_lower_level)){
-                                    break;
-                                }
-                                bool select_current_level = true;
-                                if(!error_gain_curr_level) select_current_level = false;
-                                else if(!error_gain_lower_level) select_current_level = true;
-                                else{
-                                    double efficiency_lower_level = error_gain_lower_level / size_lower_level;
-                                    select_current_level = (efficiency_curr_level > efficiency_lower_level);
-                                }
-                                if(select_current_level){
-                                    // choose segment in current level
+                                if((error_gain_curr_level == 0) && (error_gain_lower_level == 0)){
                                     level_block_fetch_option[l][i] = false;
-                                    level_block_fetch_size[l][i] = size_curr_level;
-                                    level_block_error_gain[l][i] = error_gain_curr_level;
+                                    level_block_fetch_size[l][i] = 0;
+                                    level_block_error_gain[l][i] = 0;
                                 }
                                 else{
-                                    // choose lower level
-                                    level_block_fetch_option[l][i] = true;
-                                    level_block_fetch_size[l][i] = size_lower_level;
-                                    level_block_error_gain[l][i] = error_gain_lower_level;
+                                    bool select_current_level = true;
+                                    if(error_gain_lower_level == 0) select_current_level = true;
+                                    else if(error_gain_curr_level == 0) select_current_level = false;
+                                    else{
+                                        double efficiency_lower_level = error_gain_lower_level / size_lower_level;
+                                        select_current_level = (efficiency_curr_level > efficiency_lower_level);
+                                    }
+                                    if(select_current_level){
+                                        // choose segment in current level
+                                        level_block_fetch_option[l][i] = false;
+                                        level_block_fetch_size[l][i] = size_curr_level;
+                                        level_block_error_gain[l][i] = error_gain_curr_level;
+                                    }
+                                    else{
+                                        // choose lower level
+                                        level_block_fetch_option[l][i] = true;
+                                        level_block_fetch_size[l][i] = size_lower_level;
+                                        level_block_error_gain[l][i] = error_gain_lower_level;
+                                    }
                                 }
                                 // printf("processing done\n");
                                 if(l > 0) i = reversed_agg_block_hierarchy[l][i];
                                 l = l - 1;
                                 // printf("initializing block %d in level %d\n", i, l);
                             }
+                        }
+                        else{
+                            // fetch current level but ouf of size
+                            // should not happen
+                            std::cout << "level = " << level << ", agg_block_id = " << agg_block_id << std::endl;
+                            std::cerr << "error!\n";
+                            exit(0);
                         }
                     }
                 }
