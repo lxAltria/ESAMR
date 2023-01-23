@@ -9,9 +9,9 @@ namespace MDR {
     class DirectInterleaver : public concepts::InterleaverInterface<T> {
     public:
         DirectInterleaver(){}
-        void interleave(T const * data, const std::vector<uint32_t>& dims, const std::vector<uint32_t>& dims_fine, const std::vector<uint32_t>& dims_coasre, T * buffer) const {
-            uint32_t dim0_offset = dims[1] * dims[2];
-            uint32_t dim1_offset = dims[2];
+        void interleave(T const * data, const std::vector<uint32_t>& dims, const std::vector<uint32_t>& dims_fine, const std::vector<uint32_t>& dims_coasre, T * buffer, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
+            uint32_t dim0_offset = strides.size() ? strides[0] : (dims[1] * dims[2]);
+            uint32_t dim1_offset = strides.size() ? strides[1] : dims[2];
             uint32_t count = 0;
             for(int i=0; i<dims_fine[0]; i++){
                 for(int j=0; j<dims_fine[1]; j++){
@@ -23,9 +23,9 @@ namespace MDR {
                 }
             }
         }
-        void reposition(T const * buffer, const std::vector<uint32_t>& dims, const std::vector<uint32_t>& dims_fine, const std::vector<uint32_t>& dims_coasre, T * data) const {
-            uint32_t dim0_offset = dims[1] * dims[2];
-            uint32_t dim1_offset = dims[2];
+        void reposition(T const * buffer, const std::vector<uint32_t>& dims, const std::vector<uint32_t>& dims_fine, const std::vector<uint32_t>& dims_coasre, T * data, std::vector<uint32_t> strides=std::vector<uint32_t>()) const {
+            uint32_t dim0_offset = strides.size() ? strides[0] : (dims[1] * dims[2]);
+            uint32_t dim1_offset = strides.size() ? strides[1] : dims[2];
             uint32_t count = 0;
             for(int i=0; i<dims_fine[0]; i++){
                 for(int j=0; j<dims_fine[1]; j++){

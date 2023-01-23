@@ -13,10 +13,10 @@ namespace MDR {
         }
 
         std::vector<std::vector<const uint8_t*>> retrieve_level_components(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<uint32_t>& retrieve_sizes, const std::vector<uint8_t>& prev_level_num_bitplanes, const std::vector<uint8_t>& level_num_bitplanes){
-            assert(offsets.size() == retrieve_sizes.size());
+            // assert(offsets.size() == retrieve_sizes.size());
             release();
             uint32_t total_retrieve_size = 0;
-            for(int i=0; i<level_files.size(); i++){
+            for(int i=0; i<retrieve_sizes.size(); i++){
                 std::cout << "Retrieve " << +level_num_bitplanes[i] << " (" << +(level_num_bitplanes[i] - prev_level_num_bitplanes[i]) << " more) bitplanes from level " << i << std::endl;
                 FILE * file = fopen(level_files[i].c_str(), "r");
                 if(fseek(file, offsets[i], SEEK_SET)){

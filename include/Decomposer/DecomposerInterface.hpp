@@ -11,9 +11,9 @@ namespace MDR {
 
             virtual ~DecomposerInterface() = default;
 
-            virtual void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const = 0;
+            virtual void decompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides) const = 0;
 
-            virtual void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level) const = 0;
+            virtual void recompose(T * data, const std::vector<uint32_t>& dimensions, uint32_t target_level, std::vector<uint32_t> strides) const = 0;
 
             virtual void print() const = 0;
         };
