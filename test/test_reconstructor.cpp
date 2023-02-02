@@ -20,7 +20,7 @@ void evaluate(const vector<T>& data, const vector<double>& tolerance, Reconstruc
     for(int i=0; i<tolerance.size(); i++){
         cout << "Start reconstruction" << endl;
         err = clock_gettime(CLOCK_REALTIME, &start);
-        auto reconstructed_data = reconstructor.progressive_reconstruct(tolerance[i]);
+        auto reconstructed_data = reconstructor.progressive_reconstruct(tolerance[i], -1);
         err = clock_gettime(CLOCK_REALTIME, &end);
         cout << "Reconstruct time: " << (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)1000000000 << "s" << endl;
         auto dims = reconstructor.get_dimensions();

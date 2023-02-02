@@ -11,17 +11,17 @@ namespace MDR {
     public:
         DefaultLevelCompressor(){}
         uint8_t compress_level(std::vector<uint8_t*>& streams, std::vector<uint32_t>& stream_sizes) const {
-            Timer timer;
+            // Timer timer;
             for(int i=0; i<streams.size(); i++){
                 uint8_t * compressed = NULL;
-                timer.start();
+                // timer.start();
                 auto compressed_size = ZSTD::compress(streams[i], stream_sizes[i], &compressed);
                 free(streams[i]);
-                timer.end();
+                // timer.end();
                 streams[i] = compressed;
                 stream_sizes[i] = compressed_size;
             }
-            timer.print("Lossless: ");
+            // timer.print("Lossless: ");
             return 0;
         }
         void decompress_level(std::vector<const uint8_t*>& streams, const std::vector<uint32_t>& stream_sizes, uint8_t starting_bitplane, uint8_t num_bitplanes, uint8_t stopping_index) {
