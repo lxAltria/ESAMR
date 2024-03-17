@@ -26,7 +26,6 @@ template <class T, class Decomposer, class Interleaver, class Encoder, class Com
 void test(string filename, const vector<uint32_t>& dims, int target_level, int num_bitplanes, Decomposer decomposer, Interleaver interleaver, Encoder encoder, Compressor compressor, ErrorCollector collector, Writer writer){
     auto refactor = MDR::ComposedRefactor<T, Decomposer, Interleaver, Encoder, Compressor, ErrorCollector, Writer>(decomposer, interleaver, encoder, compressor, collector, writer);
     refactor.negabinary = negabinary;
-    std::cout << "negabinary = " << negabinary << std::endl;
     size_t num_elements = 0;
     auto data = MGARD::readfile<T>(filename.c_str(), num_elements);
     evaluate(data, dims, target_level, num_bitplanes, refactor);
@@ -72,10 +71,10 @@ int main(int argc, char ** argv){
     // auto interleaver = MDR::SFCInterleaver<T>();
     // auto interleaver = MDR::BlockedInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    // auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
-    // negabinary = true;
-    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    negabinary = false;
+    auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
+    negabinary = true;
+    // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    // negabinary = false;
     // auto compressor = MDR::DefaultLevelCompressor();
     auto compressor = MDR::AdaptiveLevelCompressor(64);
     // auto compressor = MDR::NullLevelCompressor();
