@@ -51,7 +51,7 @@ int main(int argc, char ** argv){
     int num_tolerance = atoi(argv[argv_id ++]);
     vector<double> tolerance(num_tolerance, 0);
     for(int i=0; i<num_tolerance; i++){
-        tolerance[i] = atof(argv[argv_id ++]);    
+        tolerance[i] = atof(argv[argv_id ++]);  
     }
     double s = atof(argv[argv_id ++]);
 

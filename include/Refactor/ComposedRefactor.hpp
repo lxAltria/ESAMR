@@ -48,7 +48,7 @@ namespace MDR {
         void write_metadata() const {
             uint32_t metadata_size = sizeof(uint8_t) + get_size(dimensions) // dimensions
                             + sizeof(uint8_t) + get_size(level_error_bounds) + get_size(level_squared_errors) + get_size(level_sizes) // level information
-                            + get_size(stopping_indices) + get_size(level_num);
+                            + get_size(stopping_indices) + get_size(level_num) + 1; // one byte for whether negabinary encoding is used 
             uint8_t * metadata = (uint8_t *) malloc(metadata_size);
             uint8_t * metadata_pos = metadata;
             *(metadata_pos ++) = (uint8_t) dimensions.size();
@@ -59,6 +59,7 @@ namespace MDR {
             serialize(level_sizes, metadata_pos);
             serialize(stopping_indices, metadata_pos);
             serialize(level_num, metadata_pos);
+            *(metadata_pos ++) = (uint8_t) negabinary;
             writer.write_metadata(metadata, metadata_size);
             free(metadata);
         }
@@ -102,7 +103,8 @@ namespace MDR {
                 interleaver.interleave(data.data(), dimensions, level_dims[i], prev_dims, reinterpret_cast<T*>(buffer));
                 // compute max coefficient as level error bound
                 T level_max_error = compute_max_abs_value(reinterpret_cast<T*>(buffer), level_elements[i]);
-                level_error_bounds.push_back(level_max_error);
+                if(negabinary) level_error_bounds.push_back(level_max_error * 4);
+                else level_error_bounds.push_back(level_max_error);
                 // timer.end();
                 // timer.print("Interleave");
                 // collect errors
@@ -147,6 +149,8 @@ namespace MDR {
         std::vector<std::vector<uint32_t>> level_sizes;
         std::vector<uint32_t> level_num;
         std::vector<std::vector<double>> level_squared_errors;
+    public:
+        bool negabinary = true;
     };
 }
 #endif

@@ -141,6 +141,7 @@ namespace MDR {
             deserialize(metadata_pos, num_levels, level_sizes);
             deserialize(metadata_pos, num_levels, stopping_indices);
             deserialize(metadata_pos, num_levels, level_num);
+            negabinary = *(metadata_pos ++);
             level_num_bitplanes = std::vector<uint8_t>(num_levels, 0);
             strides = std::vector<uint32_t>(dimensions.size());
             uint32_t stride = 1;
@@ -191,7 +192,8 @@ namespace MDR {
                 if(level_num_bitplanes[i] - prev_level_num_bitplanes[i] > 0){
                     compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], stopping_indices[i]);
                     int level_exp = 0;
-                    frexp(level_error_bounds[i], &level_exp);
+                    if(negabinary) frexp(level_error_bounds[i] / 4, &level_exp);
+                    else frexp(level_error_bounds[i], &level_exp);
                     auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                     compressor.decompress_release();
                     const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
@@ -217,7 +219,8 @@ namespace MDR {
             for(int i=current_level+1; i<=target_level; i++){
                 compressor.decompress_level(level_components[i], level_sizes[i], prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], stopping_indices[i]);
                 int level_exp = 0;
-                frexp(level_error_bounds[i], &level_exp);
+                if(negabinary) frexp(level_error_bounds[i] / 4, &level_exp);
+                else frexp(level_error_bounds[i], &level_exp);
                 auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                 compressor.decompress_release();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
@@ -268,6 +271,7 @@ namespace MDR {
         std::vector<std::vector<double>> level_squared_errors;
         int current_level = -1;
         std::vector<uint32_t> strides;
+        bool negabinary = true;
     };
 }
 #endif
