@@ -51,22 +51,28 @@ int main(int argc, char ** argv){
         string filename = "refactored_data/level_" + to_string(i) + ".bin";
         files.push_back(filename);
     }
-    using T = float;
-    using T_stream = uint32_t;
-    if(num_bitplanes > 32){
-        num_bitplanes = 32;
-        std::cout << "Only less than 32 bitplanes are supported for single-precision floating point" << std::endl;
+    // using T = float;
+    // using T_stream = uint32_t;
+    // if(num_bitplanes > 32){
+    //     num_bitplanes = 32;
+    //     std::cout << "Only less than 32 bitplanes are supported for single-precision floating point" << std::endl;
+    // }
+    using T = double;
+    using T_stream = uint64_t;
+    if(num_bitplanes > 64){
+        num_bitplanes = 64;
+        std::cout << "Only less than 64 bitplanes are supported for double-precision floating point" << std::endl;
     }
-    auto decomposer = MDR::MGARDOrthoganalDecomposer<T>();
-    // auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
+
+    auto decomposer = MDR::MGARDHierarchicalDecomposer<T>();
     auto interleaver = MDR::DirectInterleaver<T>();
     // auto interleaver = MDR::SFCInterleaver<T>();
     // auto interleaver = MDR::BlockedInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
-    // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    // auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
+    auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
     // auto compressor = MDR::DefaultLevelCompressor();
-    auto compressor = MDR::AdaptiveLevelCompressor(32);
+    auto compressor = MDR::AdaptiveLevelCompressor(64);
     // auto compressor = MDR::NullLevelCompressor();
     auto collector = MDR::SquaredErrorCollector<T>();
     auto writer = MDR::ConcatLevelFileWriter(metadata_file, files);
