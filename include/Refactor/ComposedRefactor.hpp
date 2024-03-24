@@ -79,21 +79,21 @@ namespace MDR {
                 std::cerr << "Target level is higher than " << max_level << std::endl;
                 return false;
             }
-            for(int i=0; i<100; i++){
-                std::cout << data[i] << " ";
-            }
-            std::cout << std::endl;
+            // for(int i=0; i<100; i++){
+            //     std::cout << data[i] << " ";
+            // }
+            // std::cout << std::endl;
             // Timer timer;
             // decompose data hierarchically
             // timer.start();
             decomposer.decompose(data.data(), dimensions, target_level);
-            MGARD::writefile("decomposed_coeff.dat", data.data(), data.size());
+            // MGARD::writefile("decomposed_coeff.dat", data.data(), data.size());
             // timer.end();
             // timer.print("Decompose");
-            for(int i=0; i<100; i++){
-                std::cout << data[i] << " ";
-            }
-            std::cout << std::endl;
+            // for(int i=0; i<100; i++){
+            //     std::cout << data[i] << " ";
+            // }
+            // std::cout << std::endl;
 
             // encode level by level
             level_error_bounds.clear();
@@ -112,11 +112,8 @@ namespace MDR {
                 interleaver.interleave(data.data(), dimensions, level_dims[i], prev_dims, reinterpret_cast<T*>(buffer));
                 // compute max coefficient as level error bound
                 T level_max_error = compute_max_abs_value(reinterpret_cast<T*>(buffer), level_elements[i]);
-                for(int i=0; i<10; i++){
-                    std::cout << buffer[i] << " ";
-                }
-                std::cout << "\nlevel " << i << " max error = " << level_max_error << std::endl;
-                MGARD::writefile(("level_" + std::to_string(i) + "_coeff.dat").c_str(), buffer, level_elements[i]);
+                std::cout << "level " << i << " max error = " << level_max_error << std::endl;
+                // MGARD::writefile(("level_" + std::to_string(i) + "_coeff.dat").c_str(), buffer, level_elements[i]);
                 if(negabinary) level_error_bounds.push_back(level_max_error * 4);
                 else level_error_bounds.push_back(level_max_error);
                 // timer.end();

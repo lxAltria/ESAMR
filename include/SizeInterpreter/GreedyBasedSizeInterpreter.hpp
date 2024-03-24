@@ -76,12 +76,12 @@ namespace MDR {
             error_estimator = e;
         }
         std::vector<uint32_t> interpret_retrieve_size(const std::vector<std::vector<uint32_t>>& level_sizes, const std::vector<std::vector<double>>& level_errors, double tolerance, std::vector<uint8_t>& index) const {
-            for(int i=0; i<level_errors.size(); i++){
-                for(int j=0; j<level_errors[i].size(); j++){
-                    std::cout << level_errors[i][j] << " ";
-                }
-                std::cout << std::endl;
-            }
+            // for(int i=0; i<level_errors.size(); i++){
+            //     for(int j=0; j<level_errors[i].size(); j++){
+            //         std::cout << level_errors[i][j] << " ";
+            //     }
+            //     std::cout << std::endl;
+            // }
             int num_levels = level_sizes.size();
             std::vector<uint32_t> retrieve_sizes(num_levels, 0);
             double accumulated_error = 0;
@@ -134,6 +134,9 @@ namespace MDR {
                 std::cout << i;
             }
             std::cout << std::endl;
+            for(int i=0; i<num_levels; i++){
+                std::cout << "level " << i << " expected error = " << level_errors[i][index[i]] << std::endl;
+            }
             std::cout << "Requested tolerance = " << tolerance << ", estimated error = " << accumulated_error << std::endl;
             return retrieve_sizes;
         }
@@ -216,6 +219,9 @@ namespace MDR {
                 for(int k=0; k<num; k++) std::cout << i;
             }
             std::cout << std::endl;
+            for(int i=0; i<num_levels; i++){
+                std::cout << "level " << i << " expected error = " << level_errors[i][index[i]] << std::endl;
+            }
             std::cout << "Requested tolerance = " << tolerance << ", estimated error = " << accumulated_error << std::endl;
             return retrieve_sizes;
         }

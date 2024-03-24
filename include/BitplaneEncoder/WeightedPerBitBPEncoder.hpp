@@ -138,15 +138,16 @@ namespace MDR {
                 for(int j=0; j<block_size; j++){
                     T_data cur_data = *(data_pos++);
                     // cur_data *= exp2(*(weights_pos++));
-                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    // T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp + *(weights_pos++));
                     bool sign = cur_data < 0;
                     int64_t fix_point = (int64_t) shifted_data;
                     T_fp fp_data = sign ? -fix_point : +fix_point;
-                    fp_data <<= *(weights_pos++);
-                    // if(i+j==17953617){
-                    //     std::cout << "exp = " << exp << std::endl;
+                    // if(i+j==67989643){
+                    //     std::cout << "exp = " << exp << ", num_bitplanes - exp = " << num_bitplanes - exp << std::endl;
                     //     std::cout << "data = " << data_pos[-1] << std::endl;
-                    //     std::cout << "num_bitplanes = " << num_bitplanes << std::endl;
+                    //     std::cout << "num_bitplanes = " << +num_bitplanes << std::endl;
+                    //     std::cout << "weights = " << weights_pos[-1] << std::endl;
                     //     std::bitset<64> x(fp_data);
                     //     std::cout << x << std::endl;
                     //     for(int k=num_bitplanes - 1; k>=0; k--){
@@ -175,12 +176,12 @@ namespace MDR {
                 if(rest_size == 0) rest_size = block_size;
                 for(int j=0; j<rest_size; j++){
                     T_data cur_data = *(data_pos++);
-                    // cur_data *= exp2(*(weights_pos++));
-                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    cur_data *= exp2(*(weights_pos++));
+                    // T_data shifted_data = ldexp(cur_data, num_bitplanes - exp);
+                    T_data shifted_data = ldexp(cur_data, num_bitplanes - exp + *(weights_pos++));
                     bool sign = cur_data < 0;
                     int64_t fix_point = (int64_t) shifted_data;
                     T_fp fp_data = sign ? -fix_point : +fix_point;
-                    fp_data <<= *(weights_pos++);
                     // compute level errors
                     collect_level_errors(level_errors, fabs(shifted_data), num_bitplanes);
                     bool first_bit = true;
@@ -308,6 +309,7 @@ namespace MDR {
 
         T_data * progressive_decode_weighted(const std::vector<uint8_t const *>& streams, int32_t n, int exp, uint8_t starting_bitplane, uint8_t num_bitplanes, int level) {
             const int32_t block_size = PER_BIT_BLOCK_SIZE;
+            std::cout << "level_exp = " << exp << ", value = " << exp2(exp) << std::endl;
             exp += num_weight_bitplanes;
             std::cout << "weighted decoding\n";
             // define fixed point type
@@ -362,15 +364,16 @@ namespace MDR {
                         }
                         signs[i + j] = sign;
                     }
-                    fp_data >>= *(weights_pos++);
-                    T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp);
+                    // T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp);
                     // cur_data /= exp2(*(weights_pos++));
+                    T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp - *(weights_pos++));
                     *(data_pos++) = sign ? -cur_data : cur_data;
-                    // if(i+j == 17953617){
+                    // if(i+j == 67989643){
                     //     std::cout << "starting_bitplane = " << +starting_bitplane << std::endl;
                     //     std::cout << "ending_bitplane = " << +ending_bitplane << std::endl;
-                    //     std::cout << "exp = " << exp << std::endl;
+                    //     std::cout << "exp = " << exp << ", - ending_bitplane + exp = " << - ending_bitplane + exp << std::endl;
                     //     std::cout << "data = " << data_pos[-1] << std::endl;
+                    //     std::cout << "weights = " << weights_pos[-1] << std::endl;
                     //     std::bitset<64> x(fp_data);
                     //     std::cout << x << std::endl;
                     //     exit(0);                        
@@ -408,9 +411,9 @@ namespace MDR {
                         }
                         signs[n - rest_size + j] = sign;
                     }
-                    fp_data >>= *(weights_pos++);
-                    T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp);
+                    // T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp);
                     // cur_data /= exp2(*(weights_pos++));
+                    T_data cur_data = ldexp((T_data)fp_data, - ending_bitplane + exp - *(weights_pos++));
                     *(data_pos++) = sign ? -cur_data : cur_data;
                 }
             }

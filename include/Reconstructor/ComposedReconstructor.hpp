@@ -228,29 +228,29 @@ namespace MDR {
                 auto level_decoded_data = (i<target_level) ? encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i) :  encoder.progressive_decode_weighted(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                 compressor.decompress_release();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
-                for(int i=0; i<10; i++){
-                    std::cout << level_decoded_data[i] << " ";
-                }
-                std::cout << std::endl;
-                MGARD::writefile(("level_" + std::to_string(i) + "_reconstructed_coeff.dat").c_str(), level_decoded_data, level_elements[i]);
+                // for(int i=0; i<10; i++){
+                //     std::cout << level_decoded_data[i] << " ";
+                // }
+                // std::cout << std::endl;
+                // MGARD::writefile(("level_" + std::to_string(i) + "_reconstructed_coeff.dat").c_str(), level_decoded_data, level_elements[i]);
                 interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data(), this->strides);
                 free(level_decoded_data);                    
             }
-            for(int i=0; i<100; i++){
-                std::cout << data[i] << " ";
-            }
-            MGARD::writefile("reconstructed_coeff.dat", data.data(), data.size());
-            std::cout << std::endl;
+            // for(int i=0; i<100; i++){
+            //     std::cout << data[i] << " ";
+            // }
+            // std::cout << std::endl;
+            // MGARD::writefile("reconstructed_coeff.dat", data.data(), data.size());
             if(current_level >= 0){
                 decomposer.recompose(data.data(), reconstruct_dimensions, target_level - current_level, this->strides);                
             }
             else{
                 decomposer.recompose(data.data(), reconstruct_dimensions, target_level, this->strides);
             }
-            for(int i=0; i<100; i++){
-                std::cout << data[i] << " ";
-            }
-            std::cout << std::endl;
+            // for(int i=0; i<100; i++){
+            //     std::cout << data[i] << " ";
+            // }
+            // std::cout << std::endl;
             current_dimensions = reconstruct_dimensions;
             return true;
 

@@ -12,7 +12,7 @@
 using namespace std;
 
 template <class T>
-void data_reorder_1D(const T * data_pos, size_t n_nodal, size_t n_coeff, T * nodal_buffer, T * coeff_buffer){
+void weight_reorder_1D(const T * data_pos, size_t n_nodal, size_t n_coeff, T * nodal_buffer, T * coeff_buffer){
     T * nodal_pos = nodal_buffer;
     T * coeff_pos = coeff_buffer;
     T const * cur_data_pos = data_pos;
@@ -22,8 +22,58 @@ void data_reorder_1D(const T * data_pos, size_t n_nodal, size_t n_coeff, T * nod
     }
     *(nodal_pos++) = *(cur_data_pos++);
     if(n_nodal == n_coeff + 2){
+        // *nodal_pos = 2*cur_data_pos[0] - nodal_pos[-1];
         // modified process 
         *nodal_pos = *cur_data_pos;
+    }
+}
+
+/*
+    oxoxo       oooxx       oooxx
+    xxxxx   (1) xxxxx   (2) oooxx
+    oxoxo   =>  oooxx   =>  oooxx
+    xxxxx       xxxxx       xxxxx
+    oxoxo       oooxx       xxxxx
+*/
+template <class T>
+void weight_reorder_2D(T * data_pos, T * data_buffer, size_t n1, size_t n2, size_t stride){
+    size_t n1_nodal = (n1 >> 1) + 1;
+    size_t n1_coeff = n1 - n1_nodal;
+    size_t n2_nodal = (n2 >> 1) + 1;
+    size_t n2_coeff = n2 - n2_nodal;
+    T * cur_data_pos = data_pos;
+    T * nodal_pos = data_buffer;
+    T * coeff_pos = data_buffer + n2_nodal;
+    // do reorder (1)
+    for(int i=0; i<n1; i++){
+        weight_reorder_1D(cur_data_pos, n2_nodal, n2_coeff, nodal_pos, coeff_pos);
+        memcpy(cur_data_pos, data_buffer, n2 * sizeof(T));
+        cur_data_pos += stride;
+    }
+    // do reorder (2)
+    // TODO: change to online processing for memory saving
+    switch_rows_2D_by_buffer(data_pos, data_buffer, n1, n2, stride);
+}
+
+template <class T>
+void weight_reorder_3D(T * data_pos, T * data_buffer, size_t n1, size_t n2, size_t n3, size_t dim0_stride, size_t dim1_stride){
+    size_t n1_nodal = (n1 >> 1) + 1;
+    size_t n1_coeff = n1 - n1_nodal;
+    size_t n2_nodal = (n2 >> 1) + 1;
+    size_t n2_coeff = n2 - n2_nodal;
+    size_t n3_nodal = (n3 >> 1) + 1;
+    size_t n3_coeff = n3 - n3_nodal;
+    T * cur_data_pos = data_pos;
+    // do 2D reorder
+    for(int i=0; i<n1; i++){
+        weight_reorder_2D(cur_data_pos, data_buffer, n2, n3, dim1_stride);
+        cur_data_pos += dim0_stride;
+    }
+    cur_data_pos = data_pos;
+    // reorder vertically
+    for(int j=0; j<n2; j++){
+        switch_rows_2D_by_buffer(cur_data_pos, data_buffer, n1, n3, dim0_stride);
+        cur_data_pos += dim1_stride;
     }
 }
 
