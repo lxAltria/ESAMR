@@ -48,7 +48,6 @@ namespace MDR {
             }
             // timer.end();
             // timer.print("Preprocessing");            
-
             // timer.start();
             auto prev_level_num_bitplanes(level_num_bitplanes);
             if(max_level == -1 || (max_level >= level_num_bitplanes.size())){
@@ -72,6 +71,8 @@ namespace MDR {
                     level_num_bitplanes[i] = tmp_level_num_bitplanes[i];
                 }
             }
+            std::cout << "fetch bitplanes done" << std::endl;
+            fflush(stdout);
             // check whether to reconstruct to full resolution
             int skipped_level = 0;
             for(int i=0; i<=target_level; i++){
@@ -85,12 +86,13 @@ namespace MDR {
             // timer.end();
             // timer.print("Interpret and retrieval");
             int reconstruct_level = target_level - skipped_level;
-            // std::cout << "skipped_level = " << skipped_level << ", target_level = " << +target_level << std::endl;
-
+            std::cout << "skipped_level = " << skipped_level << ", target_level = " << +target_level << std::endl;
+            fflush(stdout);
             bool success = reconstruct(reconstruct_level, prev_level_num_bitplanes);
             retriever.release();
             if(success){
                 current_level = reconstruct_level;
+                MGARD::writefile("reconstructed_data.dat", data.data(), data.size());
                 return data.data();
             }
             else{
@@ -203,6 +205,8 @@ namespace MDR {
             }
             // decompose data to current level
             if(current_level >= 0){
+                std::cout << "ComposedReconstructor line 208: exit\n";
+                exit(-1);
                 if(current_level) decomposer.recompose(data.data(), current_dimensions, current_level, this->strides);
                 std::cout << "update data\n";
                 // update data with strides
@@ -221,18 +225,32 @@ namespace MDR {
                 int level_exp = 0;
                 if(negabinary) frexp(level_error_bounds[i] / 4, &level_exp);
                 else frexp(level_error_bounds[i], &level_exp);
-                auto level_decoded_data = encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
+                auto level_decoded_data = (i<target_level) ? encoder.progressive_decode(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i) :  encoder.progressive_decode_weighted(level_components[i], level_elements[i], level_exp, prev_level_num_bitplanes[i], level_num_bitplanes[i] - prev_level_num_bitplanes[i], i);
                 compressor.decompress_release();
                 const std::vector<uint32_t>& prev_dims = (i == 0) ? dims_dummy : level_dims[i - 1];
+                for(int i=0; i<10; i++){
+                    std::cout << level_decoded_data[i] << " ";
+                }
+                std::cout << std::endl;
+                MGARD::writefile(("level_" + std::to_string(i) + "_reconstructed_coeff.dat").c_str(), level_decoded_data, level_elements[i]);
                 interleaver.reposition(level_decoded_data, reconstruct_dimensions, level_dims[i], prev_dims, data.data(), this->strides);
                 free(level_decoded_data);                    
             }
+            for(int i=0; i<100; i++){
+                std::cout << data[i] << " ";
+            }
+            MGARD::writefile("reconstructed_coeff.dat", data.data(), data.size());
+            std::cout << std::endl;
             if(current_level >= 0){
                 decomposer.recompose(data.data(), reconstruct_dimensions, target_level - current_level, this->strides);                
             }
             else{
                 decomposer.recompose(data.data(), reconstruct_dimensions, target_level, this->strides);
             }
+            for(int i=0; i<100; i++){
+                std::cout << data[i] << " ";
+            }
+            std::cout << std::endl;
             current_dimensions = reconstruct_dimensions;
             return true;
 

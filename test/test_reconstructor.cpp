@@ -58,6 +58,7 @@ int main(int argc, char ** argv){
     string metadata_file = "refactored_data/metadata.bin";
     int num_levels = 0;
     int num_dims = 0;
+    vector<uint32_t> dims;
     {
         // metadata interpreter, otherwise information needs to be provided
         size_t num_bytes = 0;
@@ -66,6 +67,14 @@ int main(int argc, char ** argv){
         num_dims = metadata[0];
         num_levels = metadata[num_dims * sizeof(uint32_t) + 1];
         cout << "number of dimension = " << num_dims << ", number of levels = " << num_levels << endl;
+        uint8_t * metadata_pos = &metadata[1];
+        for(int i=0; i<num_dims; i++){
+            dims.push_back(*reinterpret_cast<uint32_t*>(metadata_pos));
+            metadata_pos += sizeof(uint32_t);
+            cout << dims[i] << " ";
+        }
+        cout << endl;
+        fflush(stdout);
     }
     vector<string> files;
     for(int i=0; i<num_levels; i++){
@@ -80,8 +89,30 @@ int main(int argc, char ** argv){
     // auto interleaver = MDR::SFCInterleaver<T>();
     // auto interleaver = MDR::BlockedInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
+    // auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
+    auto encoder = MDR::WeightedPerBitBPEncoder<T, T_stream>();
+    auto weight_interleaver = MDR::DirectInterleaver<int>();
+    size_t num_elements = 1;
+    vector<uint32_t> dims_prev(num_dims);
+    for(int i=0; i<dims.size(); i++){
+        dims_prev[i] = (dims[i] >> 1) + 1;
+        num_elements *= dims[i];
+    }
+    int * weights = (int *) malloc(num_elements * sizeof(int));
+    for(int i=0; i<num_elements/2; i++){
+        weights[i] = 1;
+    }
+    int max_weight = 0;
+    for(int i=0; i<num_elements; i++){
+        if(weights[i] > max_weight) max_weight = weights[i];
+    }
+    // max_weight = 0;
+    std::cout << dims.size() << " " << dims_prev.size() << std::endl;
+    int * reordered_weights = (int *) malloc(num_elements * sizeof(int));
+    weight_interleaver.interleave(weights, dims, dims, dims_prev, reordered_weights);
+    free(weights);
+    encoder.set_weights(reordered_weights, max_weight);
     // auto compressor = MDR::DefaultLevelCompressor();
     auto compressor = MDR::AdaptiveLevelCompressor(64);
     // auto compressor = MDR::NullLevelCompressor();
@@ -108,5 +139,6 @@ int main(int argc, char ** argv){
             test<T>(filename, tolerance, decomposer, interleaver, encoder, compressor, estimator, interpreter, retriever);
         }
     }    
+    free(reordered_weights);
     return 0;
 }

@@ -71,10 +71,31 @@ int main(int argc, char ** argv){
     // auto interleaver = MDR::SFCInterleaver<T>();
     // auto interleaver = MDR::BlockedInterleaver<T>();
     // auto encoder = MDR::GroupedBPEncoder<T, T_stream>();
-    auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
-    negabinary = true;
+    // auto encoder = MDR::NegaBinaryBPEncoder<T, T_stream>();
+    // negabinary = true;
     // auto encoder = MDR::PerBitBPEncoder<T, T_stream>();
-    // negabinary = false;
+    auto encoder = MDR::WeightedPerBitBPEncoder<T, T_stream>();
+    negabinary = false;
+    auto weight_interleaver = MDR::DirectInterleaver<int>();
+    size_t num_elements = 1;
+    vector<uint32_t> dims_prev(num_dims);
+    for(int i=0; i<dims.size(); i++){
+        dims_prev[i] = (dims[i] >> 1) + 1;
+        num_elements *= dims[i];
+    }
+    int * weights = (int *) malloc(num_elements * sizeof(int));
+    for(int i=0; i<num_elements/2; i++){
+        weights[i] = 1;
+    }
+    int max_weight = 0;
+    for(int i=0; i<num_elements; i++){
+        if(weights[i] > max_weight) max_weight = weights[i];
+    }
+    // max_weight = 0;
+    int * reordered_weights = (int *) malloc(num_elements * sizeof(int));
+    weight_interleaver.interleave(weights, dims, dims, dims_prev, reordered_weights);
+    free(weights);
+    encoder.set_weights(reordered_weights, max_weight);
     // auto compressor = MDR::DefaultLevelCompressor();
     auto compressor = MDR::AdaptiveLevelCompressor(64);
     // auto compressor = MDR::NullLevelCompressor();
@@ -83,5 +104,6 @@ int main(int argc, char ** argv){
     // auto writer = MDR::HPSSFileWriter(metadata_file, files, 2048, 512 * 1024 * 1024);
 
     test<T>(filename, dims, target_level, num_bitplanes, decomposer, interleaver, encoder, compressor, collector, writer);
+    free(reordered_weights);
     return 0;
 }

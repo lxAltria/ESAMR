@@ -87,7 +87,7 @@ namespace MDR {
             // decompose data hierarchically
             // timer.start();
             decomposer.decompose(data.data(), dimensions, target_level);
-            // MGARD::writefile("decomposed_coeff.dat", data.data(), data.size());
+            MGARD::writefile("decomposed_coeff.dat", data.data(), data.size());
             // timer.end();
             // timer.print("Decompose");
             for(int i=0; i<100; i++){
@@ -116,7 +116,7 @@ namespace MDR {
                     std::cout << buffer[i] << " ";
                 }
                 std::cout << "\nlevel " << i << " max error = " << level_max_error << std::endl;
-                // MGARD::writefile(("level_" + std::to_string(i) + "_coeff.dat").c_str(), buffer, level_elements[i]);
+                MGARD::writefile(("level_" + std::to_string(i) + "_coeff.dat").c_str(), buffer, level_elements[i]);
                 if(negabinary) level_error_bounds.push_back(level_max_error * 4);
                 else level_error_bounds.push_back(level_max_error);
                 // timer.end();
@@ -130,7 +130,7 @@ namespace MDR {
                 frexp(level_max_error, &level_exp);
                 std::vector<uint32_t> stream_sizes;
                 std::vector<double> level_sq_err;
-                auto streams = encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err);
+                auto streams = (i < target_level) ? encoder.encode(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err) : encoder.encode_weighted(buffer, level_elements[i], level_exp, num_bitplanes, stream_sizes, level_sq_err);
                 free(buffer);
                 level_squared_errors.push_back(level_sq_err);
                 // timer.end();

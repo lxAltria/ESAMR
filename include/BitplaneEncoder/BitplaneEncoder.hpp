@@ -4,5 +4,7 @@
 #include "GroupedBPEncoder.hpp"
 #include "PerBitBPEncoder.hpp"
 #include "NegaBinaryBPEncoder.hpp"
+#include "WeightedPerBitBPEncoder.hpp"
+#include "WeightedNegaBinaryBPEncoder.hpp"
 
 #endif
