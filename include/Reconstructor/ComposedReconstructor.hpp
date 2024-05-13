@@ -204,10 +204,24 @@ namespace MDR {
                 if(current_level) decomposer.recompose(data.data(), current_dimensions, current_level, this->strides);
                 std::cout << "update data\n";
                 // update data with strides
-                for(int i=0; i<current_dimensions[0]; i++){
-                    for(int j=0; j<current_dimensions[1]; j++){
-                        for(int k=0; k<current_dimensions[2]; k++){
-                            data[i*this->strides[0] + j*this->strides[1] + k] += cur_data[i*this->strides[0] + j*this->strides[1] + k];
+                if(dimensions.size() == 1){
+                    for(int i=0; i<current_dimensions[0]; i++){
+                            data[i] += cur_data[i];
+                    }
+                }
+                else if(dimensions.size() == 2){
+                    for(int i=0; i<current_dimensions[0]; i++){
+                        for(int j=0; j<current_dimensions[1]; j++){
+                            data[i*this->strides[0] + j] += cur_data[i*this->strides[0] + j];
+                        }
+                    }
+                }
+                else if(dimensions.size() == 3){
+                    for(int i=0; i<current_dimensions[0]; i++){
+                        for(int j=0; j<current_dimensions[1]; j++){
+                            for(int k=0; k<current_dimensions[2]; k++){
+                                data[i*this->strides[0] + j*this->strides[1] + k] += cur_data[i*this->strides[0] + j*this->strides[1] + k];
+                            }
                         }
                     }
                 }
